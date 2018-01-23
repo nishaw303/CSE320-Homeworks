@@ -23,7 +23,7 @@ Now, let's get familiar with Travis CI interface that is used for providing feed
 ```bash
 mv hello.a hello.b
 ```
-This is will rename `hello.a` file into `hello.b`. As we made a change to our repository so version control (git in our case) should notice that! Let's check that by typing the following command:
+This will rename `hello.a` file to `hello.b`. As we made a change to our repository a version control system (git in our case) should notice that! Let's check that by typing the following command:
 ```bash
 git status
 ```
@@ -45,7 +45,7 @@ Now, it should work and we are ready to push our changes to the GitHub server. T
 ```bash
 git push
 ```
-Now, let's go to see results. Open the link https://github.com/CSE320Spring2018/hw0-<your GitHub username\> and click on the link to see your commits (it usually has name "X commits", where X is some number and there is timer icon just left to it). You should see list of commits in your repository. There will be more than one, which is fine as first few are made by us during creation of this assignment. On top you should see yours. But, wait...there is a red cross icon indicating that something went wrong. This is a notification from Travis CI saying that something went wrong. Let's click on it to see what exactly. NB: be aware that it may take some time to generate a page with report so if you will get any error such as that repository/owner cannot be found just be patient and try again in a few minutes.
+Now, let's go to see results. Open the link https://github.com/CSE320Spring2018/hw0-<your GitHub username\> and click on the link to see your commits (it usually has name "X commits", where X is some number and there is a timer icon just left to it). You should see list of commits in your repository. There will be more than one, which is fine as first few are made by us during creation of this assignment. On top you should see yours. But, wait...there is a red cross icon indicating that something went wrong. This is a notification from Travis CI saying that something went wrong. Let's click on it to see what exactly. NB: be aware that it may take some time to generate a page with report so if you will get any error such as that repository/owner cannot be found just be patient and try again in a few minutes.
 After some time link should lead you to the report and you can scroll down to see something like that:
 ```bash
 $ gcc hello.c -o hello
