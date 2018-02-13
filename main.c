@@ -76,10 +76,12 @@ int main(int argc, char **argv) {
   	}
   	
   	/* Checking if there is at least on argument, opening source file and error checking */
+  	if (!(mainfile = fopen(*argv, "r"))){
+  		printf("FAILED TO PARSE FILE\n");
+  		return 1;
+  	}
   	if (argc >= 3){
-  		if (!(mainfile = fopen(*(argv + 1), "r"))){
-  			printf("FAILED TO PARSE FILE");
-  		}
+  		mainfile = fopen(*argv, "r");
   	}
   	else {
   		printf("NO QUERY PROVIDED\n");
