@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+/* Function to check string length */
 int stringLen(char *string){
 
 	int len = 0;
@@ -12,6 +13,7 @@ int stringLen(char *string){
 	return len;
 }
 
+/* Function to check string equality */
 int stringComp(char *string1, char *string2){
 	
 	while(*string1 == *string2){
@@ -22,6 +24,16 @@ int stringComp(char *string1, char *string2){
 	return 0;
 }
 
+/* Our student structure */
+struct Student { 
+	int id;
+	char *firstname;
+	char *lastname;
+	char *major;
+	int gpa;
+};
+
+/* Main function */
 int main(int argc, char **argv) {
 
 	extern char *optarg;
@@ -74,10 +86,12 @@ int main(int argc, char **argv) {
   		printf("OTHER ERROR");
   		return 1;
   	}
-  	if (outputfile = fopen(filename, "r")){
+  	if (oflag && outputfile = fopen(filename, "r")){
   		printf("FILE EXISTS");
   		return 1;
   	}
+  	
+  	
 
   	return 0;
 }
