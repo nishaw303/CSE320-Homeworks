@@ -37,6 +37,12 @@ struct student_records {
 /* Main function */
 int main(int argc, char **argv) {
 
+	/* First check if input file exists */
+	if (fopen(*(argv + 1), "r") == NULL){
+  		printf("FAILED TO PARSE FILE\n");
+  		return 1;
+  	}
+  	
 	extern char *optarg;
 	extern int optind;
   	int op;
@@ -76,10 +82,6 @@ int main(int argc, char **argv) {
   	}
   	
   	/* Checking if there is at least on argument, opening source file and error checking */
-  	if (!(mainfile = fopen(*argv, "r"))){
-  		printf("FAILED TO PARSE FILE\n");
-  		return 1;
-  	}
   	if (argc >= 3){
   		mainfile = fopen(*argv, "r");
   	}
@@ -91,7 +93,7 @@ int main(int argc, char **argv) {
   		printf("OTHER ERROR\n");
   		return 1;
   	}
-  	if (oflag && (outputfile = fopen(filename, "w"))){
+  	if (oflag && ((fopen(filename, "r")) != NULL)){
   		printf("FILE EXISTS\n");
   		return 1;
   	}
