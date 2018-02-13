@@ -80,15 +80,15 @@ int main(int argc, char **argv) {
   		mainfile = fopen(*(argv + 1), "r");
   	}
   	else {
-  		printf("NO QUERY PROVIDED");
+  		printf("NO QUERY PROVIDED\n");
   		return 1;
   	}
   	if ((vflag && (iflag || fflag || mflag)) || error){
-  		printf("OTHER ERROR");
+  		printf("OTHER ERROR\n");
   		return 1;
   	}
   	if (oflag && (outputfile = fopen(filename, "r"))){
-  		printf("FILE EXISTS");
+  		printf("FILE EXISTS\n");
   		return 1;
   	}
   	
