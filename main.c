@@ -77,7 +77,9 @@ int main(int argc, char **argv) {
   	
   	/* Checking if there is at least on argument, opening source file and error checking */
   	if (argc >= 3){
-  		mainfile = fopen(*(argv + 1), "r");
+  		if (!(mainfile = fopen(*(argv + 1), "r"))){
+  			printf("FAILED TO PARSE FILE");
+  		}
   	}
   	else {
   		printf("NO QUERY PROVIDED\n");
@@ -87,7 +89,7 @@ int main(int argc, char **argv) {
   		printf("OTHER ERROR\n");
   		return 1;
   	}
-  	if (oflag && (outputfile = fopen(filename, "r"))){
+  	if (oflag && (outputfile = fopen(filename, "w"))){
   		printf("FILE EXISTS\n");
   		return 1;
   	}
