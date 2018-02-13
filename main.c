@@ -24,13 +24,14 @@ int stringComp(char *string1, char *string2){
 	return 0;
 }
 
-/* Our student structure */
-struct Student { 
+/* Our student record structure */
+struct student_records { 
 	int id;
 	char *firstname;
 	char *lastname;
 	char *major;
 	int gpa;
+	struct student_records *ptr;
 };
 
 /* Main function */
@@ -86,7 +87,7 @@ int main(int argc, char **argv) {
   		printf("OTHER ERROR");
   		return 1;
   	}
-  	if (oflag && outputfile = fopen(filename, "r")){
+  	if (oflag && (outputfile = fopen(filename, "r"))){
   		printf("FILE EXISTS");
   		return 1;
   	}
