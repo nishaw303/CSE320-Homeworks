@@ -271,7 +271,16 @@ int main(int argc, char **argv) {
   		
   		}
   		else if (*line == 'D'){
-  			
+  			student_records* new = fromline(line, head);
+  			if (searchid(new->id, head) == NULL){
+  				printf("STUDENT RECORD NOT FOUND");
+  			}
+  			else{
+  				delete(new->id, head);
+  			}
+  		}
+  		else{
+  			printf("FAILED TO PARSE FILE\n");
   		}
   	}
 	
