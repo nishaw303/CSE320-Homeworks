@@ -28,43 +28,6 @@ int strcomp(char *string1, char *string2){
 	return 0;
 }
 
-/* Function to iterate through string tokens, imitates existing strtok */
-char* strtok(char *str, char *comp){
-
-	static int pos;
-	static char *s;	
-	int i = 0, start = pos;
-
-	if(str != NULL)
-		s = str;
-	
-	i = 0;
-	int j = 0;
-	for (pos; *(s + pos) != '\0'; pos++){
-		j = 0;
-		for (j; *(comp + j) != '\0'; j++){
-			if (*(s + pos) == *(comp + j)){
-				*(s + pos) = '\0';
-				pos = pos + 1;				
-				if (*(s + start) != '\0')
-					return (s + start);
-				else{
-					start = pos;
-					pos--;
-					break;
-				}
-			}
-		}
-	}
-	*(s + pos) = '\0';
-	if (*(s + start) == '\0'){
-		return NULL;
-	}
-	else{
-		return (s + start);
-	}
-}
-
 /* Function to copy strings */
 void strcopy(char *temp, char *tocopy){
 
@@ -97,14 +60,6 @@ student_records* make(int id, char *firstname, char *lastname, double gpa, char 
 	new->major = major;
 	
 	return new;
-}
-
-student_records* prepend(int id, char *firstname, char *lastname, double gpa, char *major, student_records* head){
-
-	student_records* new = make(id, firstname, lastname, gpa, major, head);
-	head = new;
-	
-	return head;
 }
 
 student_records* searchid(int id, student_records* head){
@@ -189,6 +144,33 @@ student_records* delete(int id, student_records* head){
 	free(temp);
 	return head;
 }
+
+student_records* fromline(char *line, student_records* head){
+
+    char *str = line;
+    char newString[5][10]; 
+    int i = 0, j = 0, ctr = 0;
+    
+    for(i = 0; i <= (strleng(str)); i++){
+        if(*(str + i) == ' ' || *(str + i) == '\0'){
+            *((char *)newString + ctr * 10 + j) = '\0';
+            ctr++;
+            j = 0;
+        }
+        else{
+            *((char *)newString + ctr * 10 + j) = *(str + i);
+            j++;
+        }
+    }
+    if (searchid(atoi(*(newString + 1)), head) != NULL){
+    	student_records* new = make(-1, " ", " ", -1.0, " ", NULL);
+    	return new;
+    }
+    else{
+    	student_records* new = make(atoi(*(newString + 1)), *(newString + 2), *(newString + 3), atof(*(newString + 4)), *(newString + 5), NULL);
+    	return new;
+    }
+}
 		
 /* Main function */
 int main(int argc, char **argv) {
@@ -253,41 +235,44 @@ int main(int argc, char **argv) {
   	}
   	
   	/* Create linked list */
-  	student_records* head;
+  	student_records* head = NULL;
   	
   	
   	/* Reading from input file */
   	char line[256];
   	char *token = NULL;
-  	char *delm = " ";
+  	char *delm = ",!? \n";
   	size_t i = 0;
   	ssize_t read;
   	while(fgets(line, sizeof(line), mainfile) != NULL){
 
-		char *temp = malloc(strleng(line));
-		strcopy(temp, line);
-  		token = strtok(temp, delm);
+		*(line + strleng(line) - 1) = '\0';
+		
+		if (*line == 'A'){
+  			student_records* new = fromline(line, head);
+  			if (new == NULL){
+  				printf("FAILED TO PARSE FILE\n");
+  				return 1;
+  			}
+  			if (new->id == -1){
+  				printf("ID NOT UNIQUE\n");
+  				return 1;
+  			}
+  			else{
+  				new->next = head;
+  				head = new;
+  			}
+  		}
+  		else if (*line == 'U'){
+  			student_records* new = fromline(line, head);
+  			if (new == NULL){
+  				printf("FAILED TO PARSE FILE\n");
+  			}
   		
-  		if (strcomp(token, "ADD")){
-  			int id = atoi(strtok(temp, delm));
-  			char *firstname = strtok(temp, delm);
-  			char *lastname = strtok(temp, delm);
-  			double gpa = atof(strtok(temp, delm));
-  			char *major = strtok(temp, delm);
+  		}
+  		else if (*line == 'D'){
   			
-  			head = make(id, firstname, lastname, gpa, major, NULL);
-  			printf("%d %s %s %.2f %s\n", id, firstname, lastname, gpa, major);
   		}
-  		else if (strcomp(token, "UPDATE")){
-  		
-  		}
-  		else if (strcomp(token, "DELETE")){
-  		
-  		}
-  		else{
-  		
-  		}
-  		
   	}
 	
 	fclose(mainfile);
