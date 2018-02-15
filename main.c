@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
 	extern char *optarg;
 	extern int optind;
   	int op;
-  	int vflag = 0, iflag = 0, fflag = 0, mflag = 0, oflag = 0, error = 0, i = 0;
+  	int vflag = 0, iflag = 0, fflag = 0, mflag = 0, oflag = 0, error = 0, j = 0;
   	int id = 0;
   	char *lastname, *major, *filename;
   	FILE *outputfile;
@@ -241,8 +241,8 @@ int main(int argc, char **argv) {
   			case 'i':
   				iflag = 1;
   				id = atoi(optarg);
-  				for (i = 0; i < strleng(optarg); i++){
-  					if (isdigit(*(optarg + i)) == 0){
+  				for (j = 0; j < strleng(optarg); j++){
+  					if (isdigit(*(optarg + j)) == 0){
   						printf("OTHER ERROR\n");
   						return 1;
   					}
@@ -251,8 +251,8 @@ int main(int argc, char **argv) {
   			case 'f':
   				fflag = 1;
   				lastname = optarg;
-  				for (i = 0; i < strleng(optarg); i++){
-  					if (isalpha(*(optarg + i)) == 0){
+  				for (j = 0; j < strleng(optarg); j++){
+  					if (isdigit(*(optarg + j)) == 0){
   						printf("OTHER ERROR\n");
   						return 1;
   					}
@@ -261,8 +261,8 @@ int main(int argc, char **argv) {
   			case 'm':
   				mflag = 1;
   				major = optarg;
-  				for (i = 0; i < strleng(optarg); i++){
-  					if (isalpha(*(optarg + i)) == 0){
+  				for (j = 0; j < strleng(optarg); j++){
+  					if (isdigit(*(optarg + j)) == 0){
   						printf("OTHER ERROR\n");
   						return 1;
   					}
