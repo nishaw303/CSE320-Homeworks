@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <ctype.h>
 
 /* Function to find string length */
 int strleng(char *string){
@@ -164,10 +165,24 @@ student_records* fromline(char *line, student_records* head){
     }
     char *firstname = (char *)malloc(sizeof(*(newString + 2)));
     strcopy(firstname, *(newString + 2));
+    for (i = 0; i < strleng(firstname); i++){
+    	*(firstname + i) = tolower(*(firstname + i));
+    }
+    *firstname = toupper(*firstname);
+    
     char *lastname = (char *)malloc(sizeof(*(newString + 3)));
     strcopy(lastname, *(newString + 3));
+    for (i = 0; i < strleng(lastname); i++){
+    	*(lastname + i) = tolower(*(lastname + i));
+    }
+    *lastname = toupper(*lastname);
+    
     char *major = (char *)malloc(sizeof(*(newString + 5)));
     strcopy(major, *(newString + 5));
+    for (i = 0; i < strleng(major);	i++){
+    	*(major + i) = toupper(*(major + i));
+    }
+    
     student_records* new = make(atoi(*(newString + 1)), firstname, lastname, atof(*(newString + 4)), major, NULL);
     return new;
 }
