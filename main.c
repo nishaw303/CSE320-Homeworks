@@ -162,14 +162,8 @@ student_records* fromline(char *line, student_records* head){
             j++;
         }
     }
-    if (searchid(atoi(*(newString + 1)), head) != NULL){
-    	student_records* new = make(-1, " ", " ", -1.0, " ", NULL);
-    	return new;
-    }
-    else{
-    	student_records* new = make(atoi(*(newString + 1)), *(newString + 2), *(newString + 3), atof(*(newString + 4)), *(newString + 5), NULL);
-    	return new;
-    }
+    student_records* new = make(atoi(*(newString + 1)), *(newString + 2), *(newString + 3), atof(*(newString + 4)), *(newString + 5), NULL);
+    return new;
 }
 		
 /* Main function */
@@ -268,12 +262,22 @@ int main(int argc, char **argv) {
   			if (new == NULL){
   				printf("FAILED TO PARSE FILE\n");
   			}
+  			student_records* cursor = searchid(new->id, head);
+  			if (cursor == NULL){
+  				printf("STUDENT RECORD CANNOT BE DELETED NOR UPDATED\n");
+  			}
+  			else{
+  				cursor->firstname = new->firstname;
+  				cursor->lastname = new->lastname;
+  				cursor->gpa = new->gpa;
+  				cursor->major = new->major;
+  			}
   		
   		}
   		else if (*line == 'D'){
   			student_records* new = fromline(line, head);
   			if (searchid(new->id, head) == NULL){
-  				printf("STUDENT RECORD NOT FOUND");
+  				printf("STUDENT RECORD CANNOT BE DELETED NOR UPDATED\n");
   			}
   			else{
   				delete(new->id, head);
