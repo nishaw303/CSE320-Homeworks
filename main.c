@@ -149,6 +149,7 @@ student_records* delete(int id, student_records* head){
 student_records* fromline(char *line, student_records* head){
 
     char *str = line;
+    char *characters = "0123456789.";
     char newString[5][10]; 
     int i = 0, j = 0, ctr = 0;
     
@@ -163,6 +164,28 @@ student_records* fromline(char *line, student_records* head){
             j++;
         }
     }
+    /* Check if ints are ints and doubles are doubles */
+    char *temp = (char *)malloc(sizeof(*(newString + 1)));
+    strcopy(temp, *(newString + 1));
+    while(*temp){
+    	if (isdigit(*temp) == 0){
+    		return NULL;
+    	}
+    	temp++;
+    }
+    char *temp2 = (char *)malloc(sizeof(*(newString + 4)));
+    strcopy(temp, *(newString + 4));
+    while(*temp){
+    	if (isdigit(*temp) == 0){
+    		if (*temp != '.'){
+    			return NULL;
+    		}
+    	}
+    	temp++;
+    }
+    
+    
+    /* Copy all of the string fields and fix any casing errors*/
     char *firstname = (char *)malloc(sizeof(*(newString + 2)));
     strcopy(firstname, *(newString + 2));
     for (i = 0; i < strleng(firstname); i++){
@@ -184,6 +207,18 @@ student_records* fromline(char *line, student_records* head){
     }
     
     student_records* new = make(atoi(*(newString + 1)), firstname, lastname, atof(*(newString + 4)), major, NULL);
+    
+    /* Lets do some quick format checking */
+    if ((new->id < 0) ||
+    	((strleng(new->firstname) > 10) || (strleng(new->firstname) < 3)) || 
+    	((strleng(new->lastname) > 10) || (strleng(new->lastname) < 3)) ||
+    	((new->gpa > 4) || (new->gpa < 1)) ||
+    	(strleng(new->major) != 3)){
+    	
+    	printf("FAILED TO PARSE FILE\n");
+    	return NULL;
+  	}
+  	
     return new;
 }
 		
@@ -269,7 +304,7 @@ int main(int argc, char **argv) {
   				printf("ID NOT UNIQUE\n");
   				return 1;
   			}
-  			else{
+  			else{		
   				if (head == NULL){
   					head = new;
   				}
