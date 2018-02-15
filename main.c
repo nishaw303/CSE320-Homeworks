@@ -154,6 +154,9 @@ student_records* fromline(char *line, student_records* head){
     int i = 0, j = 0, ctr = 0;
     
     for(i = 0; i <= (strleng(str)); i++){
+    	if(j > 10){	//Means one of the paramaters was larger than 10
+    		return NULL;
+    	}
         if(*(str + i) == ' ' || *(str + i) == '\0'){
             *((char *)newString + ctr * 10 + j) = '\0';
             ctr++;
@@ -164,7 +167,7 @@ student_records* fromline(char *line, student_records* head){
             j++;
         }
     }
-    /* Check if ints are ints and doubles are doubles */
+    /* Checking all formatting for inputs */
     char *temp = (char *)malloc(sizeof(*(newString + 1)));
     strcopy(temp, *(newString + 1));
     while(*temp){
@@ -173,17 +176,17 @@ student_records* fromline(char *line, student_records* head){
     	}
     	temp++;
     }
-    char *temp2 = (char *)malloc(sizeof(*(newString + 4)));
-    strcopy(temp, *(newString + 4));
-    while(*temp){
-    	if (isdigit(*temp) == 0){
-    		if (*temp != '.'){
+    
+    char *temp4 = (char *)malloc(sizeof(*(newString + 4)));
+    strcopy(temp4, *(newString + 4));
+    while(*temp4){
+    	if (isdigit(*temp4) == 0){
+    		if (*temp4 != '.'){
     			return NULL;
     		}
     	}
-    	temp++;
+    	temp4++;
     }
-    
     
     /* Copy all of the string fields and fix any casing errors*/
     char *firstname = (char *)malloc(sizeof(*(newString + 2)));
@@ -207,18 +210,6 @@ student_records* fromline(char *line, student_records* head){
     }
     
     student_records* new = make(atoi(*(newString + 1)), firstname, lastname, atof(*(newString + 4)), major, NULL);
-    
-    /* Lets do some quick format checking */
-    if ((new->id < 0) ||
-    	((strleng(new->firstname) > 10) || (strleng(new->firstname) < 3)) || 
-    	((strleng(new->lastname) > 10) || (strleng(new->lastname) < 3)) ||
-    	((new->gpa > 4) || (new->gpa < 1)) ||
-    	(strleng(new->major) != 3)){
-    	
-    	printf("FAILED TO PARSE FILE\n");
-    	return NULL;
-  	}
-  	
     return new;
 }
 		

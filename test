@@ -1,5 +1,3 @@
-ADD 4 Nick Shaw 3.11 CSE
-ADD 5 John Smith 4.00 AMS
-ADD 9 Jane Doe 2.98 GEO
-UPDATE 4 Nick Shaw 2.00 CSE
-UPDATE 9 Joe Shmo 3.45 AMS
+ADD 3 john doe 3.43 AMS
+ADD 5 mary jane 3.87 ART
+DELETE 4
