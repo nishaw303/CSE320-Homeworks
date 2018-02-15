@@ -244,10 +244,6 @@ int main(int argc, char **argv) {
   		printf("OTHER ERROR\n");
   		return 1;
   	}
-  	if (oflag && ((fopen(filename, "r")) != NULL)){
-  		printf("FILE EXISTS\n");
-  		return 1;
-  	}
   	
   	/* Create linked list */
   	student_records* head = NULL;
@@ -320,8 +316,35 @@ int main(int argc, char **argv) {
   			return 1;
   		}
   	}
+	fclose(mainfile);
   	
   	/* Now that we have our linked list, we can work with the flags */
+  	if (oflag && ((fopen(filename, "r")) != NULL)){
+  		char *answer;
+  		printf("File already exists, overwrite?: ");
+  		scanf("%s", answer);
+  		if (*answer == 'y'){
+  			remove(filename);
+  			outputfile = fopen(filename, "w");
+  			student_records* cursor = head;
+  			while(cursor != NULL){
+  				fprintf(outputfile, "%d %s %s %.2f %s\n", cursor->id, cursor->firstname, cursor->lastname, cursor->gpa, cursor->major);
+  				cursor = cursor->next;
+  			}
+  		}
+  		else{
+  			printf("FILE EXISTS\n");
+  			return 1;
+  		}
+  	}
+  	else if (oflag){
+  		outputfile = fopen(filename, "w");
+		student_records* cursor = head;
+		while(cursor != NULL){
+			fprintf(outputfile, "%d %s %s %.2f %s\n", cursor->id, cursor->firstname, cursor->lastname, cursor->gpa, cursor->major);
+			cursor = cursor->next;
+		}
+  	}
   	if (vflag){
   		student_records* cursor = head;
   		while(cursor != NULL){
@@ -330,18 +353,33 @@ int main(int argc, char **argv) {
   		}
   	}
   	if (iflag){
-  		
+  		student_records* cursor = searchid(id, head);
+  		if (cursor == NULL){
+  			printf("STUDENT RECORD NOT FOUND\n");
+  			return 1;
+  		}
+  		else{
+  			printf("%d %s %s %.2f %s\n", cursor->id, cursor->firstname, cursor->lastname, cursor->gpa, cursor->major);
+  		}
   	}
   	if (fflag){
-  		
+  		student_records* cursor = head;
+  		while(cursor != NULL){
+  			if (strcomp(cursor->lastname, lastname)){
+  				printf("%d %s %s %.2f %s\n", cursor->id, cursor->firstname, cursor->lastname, cursor->gpa, cursor->major);
+  			}
+  			cursor = cursor->next;
+  		}
   	}
   	if (mflag){
-  		
-  	}
-  	if (oflag){
-  		
+  		student_records* cursor = head;
+  		while(cursor != NULL){
+  			if (strcomp(cursor->major, major)){
+  				printf("%d %s %s %.2f %s\n", cursor->id, cursor->firstname, cursor->lastname, cursor->gpa, cursor->major);
+  			}
+  			cursor = cursor->next;
+  		}
   	}
 	
-	fclose(mainfile);
   	return 0;
 }
