@@ -162,7 +162,13 @@ student_records* fromline(char *line, student_records* head){
             j++;
         }
     }
-    student_records* new = make(atoi(*(newString + 1)), *(newString + 2), *(newString + 3), atof(*(newString + 4)), *(newString + 5), NULL);
+    char *firstname = (char *)malloc(sizeof(*(newString + 2)));
+    strcopy(firstname, *(newString + 2));
+    char *lastname = (char *)malloc(sizeof(*(newString + 3)));
+    strcopy(lastname, *(newString + 3));
+    char *major = (char *)malloc(sizeof(*(newString + 5)));
+    strcopy(major, *(newString + 5));
+    student_records* new = make(atoi(*(newString + 1)), firstname, lastname, atof(*(newString + 4)), major, NULL);
     return new;
 }
 		
@@ -248,23 +254,33 @@ int main(int argc, char **argv) {
   				printf("FAILED TO PARSE FILE\n");
   				return 1;
   			}
-  			if (new->id == -1){
+  			if (searchid(new->id, head) != NULL){
   				printf("ID NOT UNIQUE\n");
   				return 1;
   			}
   			else{
-  				new->next = head;
-  				head = new;
+  				if (head == NULL){
+  					head = new;
+  				}
+  				else{
+  					student_records* cursor = head;
+  					while(cursor->next != NULL){
+  						cursor = cursor->next;
+  					}
+  					cursor->next = new;
+  				}
   			}
   		}
   		else if (*line == 'U'){
   			student_records* new = fromline(line, head);
   			if (new == NULL){
   				printf("FAILED TO PARSE FILE\n");
+  				return 1;
   			}
   			student_records* cursor = searchid(new->id, head);
   			if (cursor == NULL){
   				printf("STUDENT RECORD CANNOT BE DELETED NOR UPDATED\n");
+  				return 1;
   			}
   			else{
   				cursor->firstname = new->firstname;
@@ -278,6 +294,7 @@ int main(int argc, char **argv) {
   			student_records* new = fromline(line, head);
   			if (searchid(new->id, head) == NULL){
   				printf("STUDENT RECORD CANNOT BE DELETED NOR UPDATED\n");
+  				return 1;
   			}
   			else{
   				delete(new->id, head);
@@ -285,7 +302,29 @@ int main(int argc, char **argv) {
   		}
   		else{
   			printf("FAILED TO PARSE FILE\n");
+  			return 1;
   		}
+  	}
+  	
+  	/* Now that we have our linked list, we can work with the flags */
+  	if (vflag){
+  		student_records* cursor = head;
+  		while(cursor != NULL){
+  			printf("%d %s %s %.2f %s\n", cursor->id, cursor->firstname, cursor->lastname, cursor->gpa, cursor->major);
+  			cursor = cursor->next;
+  		}
+  	}
+  	if (iflag){
+  		
+  	}
+  	if (fflag){
+  		
+  	}
+  	if (mflag){
+  		
+  	}
+  	if (oflag){
+  		
   	}
 	
 	fclose(mainfile);
