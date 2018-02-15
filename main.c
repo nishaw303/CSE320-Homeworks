@@ -241,14 +241,32 @@ int main(int argc, char **argv) {
   			case 'i':
   				iflag = 1;
   				id = atoi(optarg);
+  				for (int i = 0; i < strleng(optarg); i++){
+  					if (isdigit(*(optarg + i)) == 0){
+  						printf("OTHER ERROR\n");
+  						return 1;
+  					}
+  				}
   				break;
   			case 'f':
   				fflag = 1;
   				lastname = optarg;
+  				for (int i = 0; i < strleng(optarg); i++){
+  					if (isalpha(*(optarg + i)) == 0){
+  						printf("OTHER ERROR\n");
+  						return 1;
+  					}
+  				}
   				break;
   			case 'm':
   				mflag = 1;
   				major = optarg;
+  				for (int i = 0; i < strleng(optarg); i++){
+  					if (isalpha(*(optarg + i)) == 0){
+  						printf("OTHER ERROR\n");
+  						return 1;
+  					}
+  				}
   				break;
   			case 'o':
   				oflag = 1;
