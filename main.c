@@ -1,4 +1,11 @@
 #include "helper.h"
+#include <inttypes.h>
+
+typedef struct header{
+	uint64_t size;
+	uint64_t ID;
+	uint64_t Flag;
+} Header;
 
 int main(int argc, char** argv) {
     if (*(argv + 1) == NULL) {
@@ -13,6 +20,11 @@ int main(int argc, char** argv) {
      * of the code.
      */
 
+	Header first_block_header;
+	uint64_t* first_block =  (uint64_t*) ram;
+	first_block_header.size = (*first_block >> 3) << 3;
+	first_block_header.ID = (*first_block & 6) >> 1;
+	first_block_header.Flag = *first_block & 1;
 
     /*
      * Do not modify code below.
