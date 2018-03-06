@@ -42,7 +42,6 @@ int main(int argc, char** argv) {
 	
 	int ID;
 	int size = 0;
-	int flag = 0;
 	pointer = (uint64_t*) ram;
 	
 	for (ID = 1; ID <= 3; ID++){
@@ -56,7 +55,7 @@ int main(int argc, char** argv) {
 				break;
 			
 			if (curr_ID == ID){
-				memmove(pointer, tmp_pointer, size); /* Copy the block into main memory */
+				memcpy(pointer, tmp_pointer, size); /* Copy the block into main memory */
 				pointer += size / 8;
 			}
 			
@@ -69,49 +68,66 @@ int main(int argc, char** argv) {
 	 * we can now swap them based on their allocation
 	 */
 	 
+	memmove(tmp_buf, ram, 1024); /* Move all blocks to temp memory */
+	
+	pointer = (uint64_t*) ram;
 	tmp_pointer = (uint64_t*) tmp_buf;
-	i = 0;
+	int tmp_size = 0;
 	 
-	for (ID = 1; ID <= 3; ID++){
-		pointer = (uint64_t*) ram;
-		int curr_ID = (*pointer & 6) >> 1;
+	for (ID = 1; ID <= 3;){
+		int curr_ID = (int) (*tmp_pointer & 6) >> 1;
+		size = 0;
+		if (curr_ID == 0)
+			break;
 		
-		while(curr_ID == ID){
-			size = (int) *pointer >> 3 << 3;
-			flag = *pointer & 1;
+		if (curr_ID == ID){
+			while(curr_ID == ID){
+				size += ((int) *tmp_pointer >> 3 << 3);
+				tmp_pointer += ((int) *tmp_pointer >> 3 << 3) / 8;
+				curr_ID = (int) (*tmp_pointer & 6) >> 1;
+			}
 			
-			// CHANGE THIS SO IT KEEPS MOVING IT BACK UNTIL IT'S AT THE 1 BLOCK
-			if (flag == 0){
-				int tmp_flag = (*(pointer + size / 8) & 6) >> 1;
-				int tmp_ID = (*(pointer + size / 8) & 6) >> 1;
-				if (tmp_flag == 1 && tmp_ID == curr_ID){ /* We have to swap them */
-					swap(pointer, tmp_pointer, size);
+			tmp_pointer -= size / 8;
+		
+			for (i = 0; i < size;){
+				tmp_size = (int) *tmp_pointer >> 3 << 3;
+			
+				if (((int) *tmp_pointer & 1) == 1){
+					memcpy(pointer, tmp_pointer, tmp_size);
+					pointer += tmp_size / 8;
 				}
-				else
-					pointer += size / 8;
-			}
-			else{
-				pointer += size / 8;
+			
+				i += tmp_size;
+				tmp_pointer += tmp_size / 8;
 			}
 			
-			i += size;
-			curr_ID = (*pointer & 6) >> 1;
+			tmp_pointer -= size / 8;
+		
+			for (i = 0; i < size;){
+				tmp_size = ((int) *tmp_pointer >> 3 << 3);
+			
+				if (((int) *tmp_pointer & 1) == 0){
+					memcpy(pointer, tmp_pointer, tmp_size);
+					pointer += tmp_size / 8;
+				}
+			
+				i += tmp_size;
+				tmp_pointer += tmp_size / 8;
+			}
+			tmp_pointer = (uint64_t*) tmp_buf;
+			ID++;
+		}
+		
+		else{
+			size += ((int) *tmp_pointer >> 3 << 3);
+			tmp_pointer += ((int) *tmp_pointer >> 3 << 3) / 8;
+			curr_ID = (int) (*tmp_pointer & 6) >> 1;
 		}
 	}
 	
 	/* All of the blocks should now be in order based on their ID, then their allocation flag, 
 	 * we can now swap them based on their size
 	 */
-	 
-	for (ID = 1; ID <= 3; ID++){
-		pointer = (uint64_t*) ram;
-		int curr_ID = (*pointer & 6) >> 1;
-		int flag = 1;
-		
-		for (flag = 1; flag >= 0; flag--){
-			
-		}
-	}
 	
     /*
      * Do not modify code below.
