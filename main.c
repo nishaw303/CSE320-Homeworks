@@ -29,6 +29,25 @@ int main(int argc, char** argv) {
 	 
 	memmove(tmp_buf, ram, 1024); /* Move all blocks to temp memory */
 	
+	/* First we should remove any padding that would make things more difficult later */
+	
+	int itr;
+	for (itr = 0; itr < 1024;){
+		int tmp_size = (int) *tmp_pointer >> 3 << 3;
+		int tmp_ID = (int) (*tmp_pointer & 6) >> 1;
+		int tmp_flag = (int) *tmp_pointer & 1;
+		if ((tmp_size < 1024) && (tmp_ID > 0 && tmp_ID < 4) && (tmp_flag >= 0 && tmp_flag <= 1)){
+			memmove(pointer, tmp_pointer, tmp_size);
+			tmp_pointer += tmp_size / 8;
+			pointer += tmp_size / 8;
+			itr += tmp_size;
+		}
+		else{
+			tmp_pointer++;
+			itr += 8;
+		}
+	}
+	
 	/* Now we can just iterate through each memory block, checking the ID, 
 	 * and over-writing main memory if we find one of the right ID
 	 */
@@ -122,60 +141,18 @@ int main(int argc, char** argv) {
 	/* All of the blocks should now be in order based on their ID, then their allocation flag, 
 	 * we can now swap them based on their size
 	 */
-	
-	memmove(tmp_buf, ram, 1024); /* Move all blocks to temp memory */
-	
-	pointer = (uint64_t*) ram;
-	tmp_pointer = (uint64_t*) tmp_buf;
-	tmp_size = 0;
-	int flag = 0;
-	int s = 0;
-	
-	for (ID = 1; ID <= 3;){
-		int curr_ID = (int) (*tmp_pointer & 6) >> 1;
-		size = 0;
-		
-		if (curr_ID == 0)
-			break;
-		
-		if (curr_ID == ID){
-			int flag_1 = 0;
-			int size_1 = 0;
-			int flag_0 = 0;
-			
-			while(curr_ID == ID){
-				size += ((int) *tmp_pointer >> 3 << 3);
-				if (((int) *pointer & 1) == 1){
-					flag_1++;
-					size_1 += ((int) *tmp_pointer >> 3 << 3);
-				}
-				else{
-					flag_0++;
-				}
-				tmp_pointer += ((int) *tmp_pointer >> 3 << 3) / 8;
-				curr_ID = (int) (*tmp_pointer & 6) >> 1;
-			}
-			
-			tmp_pointer -= size / 8;
-			
-			tmp_pointer = (uint64_t*) tmp_buf;
-			ID++;
-		}
-		
-		else{
-			size += ((int) *tmp_pointer >> 3 << 3);
-			tmp_pointer += ((int) *tmp_pointer >> 3 << 3) / 8;
-			curr_ID = (int) (*tmp_pointer & 6) >> 1;
-		}
-	}
+	 
+	 
+	 
+	/* Now we can add the blank block at the end of the memory */
 	
 	pointer = (uint64_t*) ram;
-	ID = *pointer & 6 >> 1;
+	ID = (int) (*pointer & 6) >> 1;
 
 	while(ID != 0){
 		int tmp_size = *pointer >> 3 << 3;
 		pointer += tmp_size / 8;
-		ID = *pointer & 6 >> 1;
+		ID = (int) (*pointer & 6) >> 1;
 	}
 	uint64_t header = 16;
 	*pointer = header;
