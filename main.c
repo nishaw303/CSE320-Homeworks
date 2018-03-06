@@ -1,6 +1,9 @@
 #include "helper.h"
 #include <inttypes.h>
 
+void sort(uint64_t* tmp_buf, uint64_t* block_start, int tot_size);
+void swap_adj(uint64_t* tmp_buf, uint64_t* first_block, uint64_t* second_block);
+
 int main(int argc, char** argv) {
     if (*(argv + 1) == NULL) {
         printf("You should provide name of the test file.\n");
@@ -13,10 +16,9 @@ int main(int argc, char** argv) {
      * You code goes below. Do not modify provided parts
      * of the code.
      */
-
+	
+	int num_of_blocks = 0;
 	int i;
-	int buf_size = 128;
-	int total_size = 0;
 	uint64_t* pointer = (uint64_t*) ram;
 	uint64_t* tmp_pointer = (uint64_t*) tmp_buf;
 	cse320_sbrk(896);
@@ -38,6 +40,7 @@ int main(int argc, char** argv) {
 		int tmp_flag = (int) *tmp_pointer & 1;
 		if ((tmp_size < 1024) && (tmp_ID > 0 && tmp_ID < 4) && (tmp_flag >= 0 && tmp_flag <= 1)){
 			memmove(pointer, tmp_pointer, tmp_size);
+			num_of_blocks++;
 			tmp_pointer += tmp_size / 8;
 			pointer += tmp_size / 8;
 			itr += tmp_size;
@@ -141,9 +144,29 @@ int main(int argc, char** argv) {
 	/* All of the blocks should now be in order based on their ID, then their allocation flag, 
 	 * we can now swap them based on their size
 	 */
-	 
-	 
-	 
+	
+	pointer = (uint64_t*) ram;
+	for (i = 0; i < num_of_blocks; i++){
+		int tmp_flag = (int) *pointer & 1;
+		int tmp_ID = (int) (*pointer & 6) >> 1;
+		int tmp_size = (int) *pointer >> 3 << 3;
+		int tmp_next_ID = (int) (*(pointer + tmp_size / 8) & 6) >> 1;
+		int tmp_next_size = (int) *(pointer + tmp_size / 8) >> 3 << 3;
+		if (tmp_flag == 0){
+			if (tmp_next_ID == tmp_ID){
+				*pointer = (tmp_next_size + tmp_size) | tmp_ID << 1;
+				pointer += (tmp_next_size + tmp_size) / 8 - 1;
+				*pointer = (tmp_next_size + tmp_size) | tmp_ID << 1;
+				pointer++;
+				num_of_blocks--;
+			}
+			else
+				pointer += tmp_size / 8;
+		}
+		else
+			pointer += tmp_size / 8;
+	}
+	
 	/* Now we can add the blank block at the end of the memory */
 	
 	pointer = (uint64_t*) ram;
@@ -165,4 +188,47 @@ int main(int argc, char** argv) {
     cse320_check();
     cse320_free();
     return ret;
+}
+
+void sort(uint64_t* tmp_buf, uint64_t* block_start, int tot_size){
+	int i = 0;
+	int swap_made = 0;
+	uint64_t* pointer = block_start;
+	while(1){
+		int size = *pointer >> 3 << 3;
+		if ((*(pointer + size / 8) >> 3 << 3) < size){
+			swap_adj(tmp_buf, pointer, pointer + size / 8);
+			pointer += size / 8;
+			i += size;
+			swap_made = 1;
+		}
+		else{
+			pointer += size / 8;
+			i += size;
+		}
+		if (size > tot_size && !swap_made){
+			break;
+		}
+		if (size > tot_size){
+			pointer = block_start;
+			size = 0;
+		}
+	}
+	return;
+}
+
+void swap_adj(uint64_t* tmp_buf, uint64_t* first_block, uint64_t* second_block){
+	int size1 = *first_block >> 3 << 3;
+	int size2 = *second_block >> 3 << 3;
+	if (&first_block < &second_block){
+		memcpy(tmp_buf, first_block, size1);
+		memcpy(first_block, second_block, size2);
+		memcpy(first_block + size2 / 8, tmp_buf, size1);
+	}
+	else{
+		memcpy(tmp_buf, second_block, size2);
+		memcpy(second_block, first_block, size1);
+		memcpy(second_block + size1 / 8, tmp_buf, size2);
+	}
+	return;
 }
