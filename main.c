@@ -1,13 +1,6 @@
 #include "helper.h"
 #include <inttypes.h>
 
-void swap(uint64_t* pointer, uint64_t* tmp_pointer, int size){
-	memmove(tmp_pointer, pointer, size);
-	int tmp_size = (int) *(pointer + size / 8) >> 3 << 3;
-	memmove(pointer, pointer + size / 8, tmp_size);
-	memmove(pointer + tmp_size / 8, tmp_pointer, size);
-}
-
 int main(int argc, char** argv) {
     if (*(argv + 1) == NULL) {
         printf("You should provide name of the test file.\n");
@@ -77,6 +70,7 @@ int main(int argc, char** argv) {
 	for (ID = 1; ID <= 3;){
 		int curr_ID = (int) (*tmp_pointer & 6) >> 1;
 		size = 0;
+		
 		if (curr_ID == 0)
 			break;
 		
@@ -128,6 +122,65 @@ int main(int argc, char** argv) {
 	/* All of the blocks should now be in order based on their ID, then their allocation flag, 
 	 * we can now swap them based on their size
 	 */
+	
+	memmove(tmp_buf, ram, 1024); /* Move all blocks to temp memory */
+	
+	pointer = (uint64_t*) ram;
+	tmp_pointer = (uint64_t*) tmp_buf;
+	tmp_size = 0;
+	int flag = 0;
+	int s = 0;
+	
+	for (ID = 1; ID <= 3;){
+		int curr_ID = (int) (*tmp_pointer & 6) >> 1;
+		size = 0;
+		
+		if (curr_ID == 0)
+			break;
+		
+		if (curr_ID == ID){
+			int flag_1 = 0;
+			int size_1 = 0;
+			int flag_0 = 0;
+			
+			while(curr_ID == ID){
+				size += ((int) *tmp_pointer >> 3 << 3);
+				if (((int) *pointer & 1) == 1){
+					flag_1++;
+					size_1 += ((int) *tmp_pointer >> 3 << 3);
+				}
+				else{
+					flag_0++;
+				}
+				tmp_pointer += ((int) *tmp_pointer >> 3 << 3) / 8;
+				curr_ID = (int) (*tmp_pointer & 6) >> 1;
+			}
+			
+			tmp_pointer -= size / 8;
+			
+			tmp_pointer = (uint64_t*) tmp_buf;
+			ID++;
+		}
+		
+		else{
+			size += ((int) *tmp_pointer >> 3 << 3);
+			tmp_pointer += ((int) *tmp_pointer >> 3 << 3) / 8;
+			curr_ID = (int) (*tmp_pointer & 6) >> 1;
+		}
+	}
+	
+	pointer = (uint64_t*) ram;
+	ID = *pointer & 6 >> 1;
+
+	while(ID != 0){
+		int tmp_size = *pointer >> 3 << 3;
+		pointer += tmp_size / 8;
+		ID = *pointer & 6 >> 1;
+	}
+	uint64_t header = 16;
+	*pointer = header;
+	pointer++;
+	*pointer = header;
 	
     /*
      * Do not modify code below.
