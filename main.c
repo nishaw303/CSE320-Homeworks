@@ -145,7 +145,11 @@ int main(int argc, char** argv) {
 	 * we can now swap them based on their size
 	 */
 	
+	
+	/* And now we can coalesce any non-allocated blocks with the same ID together */
+	
 	pointer = (uint64_t*) ram;
+	
 	for (i = 0; i < num_of_blocks; i++){
 		int tmp_flag = (int) *pointer & 1;
 		int tmp_ID = (int) (*pointer & 6) >> 1;
