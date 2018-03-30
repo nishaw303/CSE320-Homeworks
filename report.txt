@@ -1,0 +1,24 @@
+Many of the bugs were not too difficult to find. 
+
+The first thing I did was a preliminary compile of the code to see if it would run, and I found that on line 4, 'include' was misspelled. 
+
+After that, I went through and found which libraries needed to be included, which were; string.h, sys/types.h, and unistd.h. 
+
+After that the program compiled, and I attempted to run it, and was immediately exited with a segmentation fault. I stepped though the 
+application with gdb and found that the fault was caused by the line "fscanf("%s", filename);" (line 58), as it was attempting to read in from stdin 
+with fscanf instead of scanf to get the filename. The same error was present on the line "fscanf("%s", command);" (line 65), which I also changed.
+
+I changed that and was then able to run the app, but when I attepted to generate the wallets it gave me another segmentation fault. 
+So I went through the code again and found that in the "generate_wallets" method the app was trying to create 5000000 wallets instead 
+of the num_wallets that was taken in by the file. To fix this, I changed the function so it took in the int num_wallets as an argument
+and in the main I gave the method num_wallets.
+
+After that all I had to do was build print_help.o to print_help after looking through it with gdb's dasassembly, and I realized that all it
+was doing in the main method was calling 3 printf statements, as shown by the callq and the use of the %edi register. From what I have found, 
+the %edi register is used specifically as a destination index used for string and memory array copying and setting.
+
+And with that everything seemed to run perfectly, all of the commands worked, it took in the num.txt file, printed to the wallet_info.dat file
+and read and printed the commands from the print_help application.
+
+*Note: I changed line 69 (previously "execvp("./print_help", NULL);") and added "char* const args = {NULL};" while changeing "NULL" to "&args" as
+I was recieving an error about passing NULL to execvp instead of a null terminated list of args.
