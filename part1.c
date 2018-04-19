@@ -4,18 +4,21 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <limits.h>
+#include <signal.h>
+#include <libgen.h>
 
 char* commands[] = {"help", "run", "exit"};
 char* const initial_prompt = "For help, type \"help\"\n";
-char* const help_prompt = "To run an application, type \"run\" followed by the relative or absolute path to the application\nTo exit, type \"exit\"\n";
+char* const help_prompt = "To run an application, type \"run\" followed by the relative or absolute path or the filename of the application\nTo exit, type \"exit\"\n";
+char input[255];
 
 int main(int argc, char* argv[], char* envp[]){
     
+    signal(SIGINT, SIG_IGN);
     pid_t pid;
     int status;
     char* appname = (char*)malloc(255);
-    appname = argv[1];
-    char* input;
     
     printf("%s", initial_prompt);
 prompt:
@@ -34,10 +37,23 @@ prompt:
     else if (!strcmp(command, commands[1])){
     	pid = fork();
     	if (pid == 0){
-    	
-    		/* put code to run application here */
+    		strcpy(appname, strtok(NULL, " \n"));
     		
-    		printf("Error: should not return.\n");
+    		char* params[10];
+    		params[0] = appname;
+    		
+    		int i;
+    		for (i = 1; i < 10; i++){
+    			params[i] = strtok(NULL, " \n");
+    			if (!params[i]) break;
+    		}
+    		if (!(strchr(params[0], '/'))){
+    			params[0] = realpath(appname, 0);
+    		}
+    		
+    		execvp(params[0], &params[0]);
+    		
+    		printf("Error: application not found.\n");
     		return 1;
         }
         waitpid(pid, &status, 0);
