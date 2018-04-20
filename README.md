@@ -5,10 +5,10 @@
 Very similar to my implementation from Homework 3, but with changes to how the filepath is parsed to be run and using `execvp` instead of `execve`.
 
 The way the filepath is parsed is as follows:
-	- filepath is first isolated from the "run" command with strtok
-	- filepath is moved into parameter array
-	- if filepath does not contain and '/' characters, we use `realpath` to locate the file
-	- `execvp` is run on the file with arguments being added to the params array
+- filepath is first isolated from the "run" command with strtok
+- filepath is moved into parameter array
+- if filepath does not contain and '/' characters, we use `realpath` to locate the file
+- `execvp` is run on the file with arguments being added to the params array
 	
 The `SIGINT` signal is blocked in the parent but not the child, as we create out sigpromask that blocks `SIGINT` in the parent and when we have a child we remove the block. This means that the child can be interrupted but nor the parent.
 
@@ -53,22 +53,34 @@ If `file` is not null, we assign the filename to `basename(filename)`, set `file
 
 #### cse320_fclose()
 
+Onto the `fclose()` wrapper, which takes in a file descriptor called `stream`. Again we lock `lock`, then go into a loop to see if we can find `stream` in our array. If we do find it and it is not `NULL`, we check the `ref_count`.
 
+If `ref_count` is not zero, we decrement. If it is now zero we can call `fclose(stream)` to close the file descriptor, unlock `lock` and return with 0.
+If `ref_count` is zero, we have a double close situation. We print our error message, set `errno = EINVAL`, unlock `lock` and return with -1.
+
+If we didn't find `file` that means we have an illegal filename. So we print our error message, set `errno = ENOENT`, unlock `lock` and return with -1.
 
 #### cse320_clean()
 
+Finally, we have `cse320_clean()` which takes no args. All we do here is lock `lock`, go into a loop for each array of structs and check if `ref_count > 0`. If true, either call `free()` or `fclose()` and set `ref_count = 0`.
 
+Once we have checked every struct, we unlock `lock` and return with 0.
 
 ## Part 3
 
+Now we can go over the two global variables in the beginning of the header file.
+
+First we have `timer`, which is the variable we will use to store the time in seconds for our reaping functionality. The default value for this timer is 5 seconds.
+Next we have `pid`, which will be used to store the pid of the child process to be passed to our handler method for the `SIGALRM`.
+
 #### cse320_fork()
 
-
+This is a simple wrapper for `fork()`. What it does is lock `lock`, calls `fork()` and stores the pid in `pid`. It checks if `pid != 0`, meaning it is the parent process. It then sets and `alarm` with length `timer`. If it is not the parent, it does nothing. In either case, it unlock `lock` and return the value of `pid`.
 
 #### cse320_setttimer()
 
-
+This is a very simple method only taking one argument, `t` which is the time in seconds to change the timer to. All this method does is lock `lock`, set `timer` to `t`, unlock `lock` and return with 0.
 
 #### cse320_handler()
 
-	
+This is the handler for the `SIGALRM` signal. All if does is lock `lock`, check if `pid` is not 0, and if it isn't sends a `SIGKILL` signal to the process with pid equal to `pid`. After that it unlocks `lock`.

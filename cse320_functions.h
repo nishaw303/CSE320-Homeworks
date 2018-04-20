@@ -110,7 +110,6 @@ FILE* cse320_fopen(const char* filename, const char* mode){
 	pthread_mutex_lock(&lock);
 	
 	FILE* file;
-	char* absolute_path = realpath(filename, NULL);
 	
 	if (num_file > 25){
 		printf("Too many open files\n");
@@ -121,9 +120,9 @@ FILE* cse320_fopen(const char* filename, const char* mode){
 	
 	int i;
 	for (i = 0; i < 25; i++){
-		if (file_arr[i].filename == absolute_path){
+		if (file_arr[i].filename == basename(filename)){
 			if (!file_arr[i].file_desc){
-				file_arr[i].file_desc = fopen(absolute_path, mode);
+				file_arr[i].file_desc = fopen(filename, mode);
 			}
 			file_arr[i].ref_count++;
 			pthread_mutex_unlock(&lock);
@@ -132,14 +131,14 @@ FILE* cse320_fopen(const char* filename, const char* mode){
 	}
 	for (i = 0; i < 25; i++){
 		if (!file_arr[i].filename){
-			file = fopen(absolute_path, mode);
+			file = fopen(filename, mode);
 			if (!file){
 				errno = ENFILE;
 				printf("Fopen error");
 				pthread_mutex_unlock(&lock);
 				return NULL;
 			}
-			file_arr[i].filename = absolute_path;
+			file_arr[i].filename = basename(filename);
 			file_arr[i].file_desc = file;
 			file_arr[i].ref_count++;
 			num_file++;
@@ -160,14 +159,14 @@ int cse320_fclose(FILE* stream){
 			if (file_arr[i].ref_count){
 				file_arr[i].ref_count--;
 				if (!file_arr[i].ref_count){
-					free(stream);
+					fclose(stream);
 					file_arr[i].file_desc = NULL;
 				}
 				pthread_mutex_unlock(&lock);
 				return 0;
 			}
 			else{
-				printf("Free: Double free attempt\n");
+				printf("Close: Ref count zero\n");
 				errno = EINVAL;
 				pthread_mutex_unlock(&lock);
 				return -1;
