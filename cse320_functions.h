@@ -206,8 +206,6 @@ void cse320_handler(){
 		kill(pid, SIGKILL);
 		pid = 0;
 	}
-	signal(SIGALRM, cse320_handler);
-	alarm(timer);
 	
 	pthread_mutex_unlock(&lock);
 }
