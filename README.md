@@ -1,12 +1,12 @@
 # Homework #4
 
-[Go to Part 1]#part-1  
-[Go to Part 2]#part-2  
-[Go to Part 3]#part-3  
+[Go to Part 1](#part-1)  
+[Go to Part 2](#part-2)  
+[Go to Part 3](#part-3)  
 
-Extra Credits Implemented: 
-[Go to EC 2.1]#EC-2.1  
-[Go to EC 2.2]#EC-2.2  
+Extra Credits Implemented:  
+[Go to EC 2.1](#EC-2.1)  
+[Go to EC 2.2](#EC-2.2)  
 
 ##Part 1
 
