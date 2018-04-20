@@ -15,7 +15,10 @@ char input[255];
 
 int main(int argc, char* argv[], char* envp[]){
     
-    signal(SIGINT, SIG_IGN);
+    sigset_t set;
+    sigemptyset(&set);
+    sigaddset(&set, SIGINT);
+    sigprocmask(SIG_BLOCK, &set, 0);
     pid_t pid;
     int status;
     char* appname = (char*)malloc(255);
@@ -37,6 +40,7 @@ prompt:
     else if (!strcmp(command, commands[1])){
     	pid = fork();
     	if (pid == 0){
+    		sigprocmask(SIG_UNBLOCK, &set, 0);
     		strcpy(appname, strtok(NULL, " \n"));
     		
     		char* params[10];
