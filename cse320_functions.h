@@ -86,8 +86,10 @@ int cse320_free(void* ptr){
 	for(i = 0; i < 25; i++){
 		if ((!addr_arr[i].addr) && (addr_arr[i].addr == ptr)){
 			if (addr_arr[i].ref_count){
-				addr_arr[i].ref_count--;
 				free(ptr);
+				addr_arr[i].ref_count = 0;
+				addr_arr[i].addr = 0;
+				num_addr--;
 				pthread_mutex_unlock(&lock);
 				return 0;
 			}
@@ -136,7 +138,7 @@ FILE* cse320_fopen(const char* filename, const char* mode){
 				errno = ENFILE;
 				printf("Fopen error");
 				pthread_mutex_unlock(&lock);
-				return NULL;
+				return 0;
 			}
 			file_arr[i].filename = basename(filename);
 			file_arr[i].file_desc = file;
@@ -160,7 +162,9 @@ int cse320_fclose(FILE* stream){
 				file_arr[i].ref_count--;
 				if (!file_arr[i].ref_count){
 					fclose(stream);
-					file_arr[i].file_desc = NULL;
+					file_arr[i].filename = 0;
+					file_arr[i].file_desc = 0;
+					num_file--;
 				}
 				pthread_mutex_unlock(&lock);
 				return 0;

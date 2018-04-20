@@ -1,5 +1,13 @@
 # Homework #4
 
+[Go to Part 1]#part-1  
+[Go to Part 2]#part-2  
+[Go to Part 3]#part-3  
+
+Extra Credits Implemented: 
+[Go to EC 2.1]#EC-2.1
+[Go to EC 2.2]#EC-2.2
+
 ## Part 1
 
 Very similar to my implementation from Homework 3, but with changes to how the filepath is parsed to be run and using `execvp` instead of `execve`.
@@ -84,3 +92,14 @@ Next, we have `pid`, which will be used to store the pid of the child process to
 #### cse320_handler()
 
 - This is the handler for the `SIGALRM` signal. All it does is lock `lock`, check if `pid` is not 0, and if it isn't sends a `SIGKILL` signal to the process with pid equal to `pid`. After that, it unlocks `lock`.
+
+
+## Extra Credits
+
+#### EC 2.1
+
+- To implement this extra credit, all I had to do was in `cse320_free()` in the for loop, after I find the address, was after I freed `ptr` to set `ref_count = 0`, set `addr = 0` and decrement `num_addr`. Doing this means that the struct in the array is not empty and can be used for another call of `cse320_malloc()` in the future.
+
+#### EC 2.2
+
+- The implementation for this extra credit was almost exactly the same as EC 2.1, the onyl difference was that instead of doing the clear every time the method was called, I had to check first if `ref_count = 0`, as it is possible to have multiple references to the same file descriptor. So in `cse320_fclose()` I just had to check if `ref_count = 0`, then close the file, set `filename` and `file_desc` to 0, decrement `num_file` and return.
