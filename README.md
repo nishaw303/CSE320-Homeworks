@@ -5,10 +5,10 @@
 [Go to Part 3]#part-3  
 
 Extra Credits Implemented: 
-[Go to EC 2.1]#EC-2.1
-[Go to EC 2.2]#EC-2.2
+[Go to EC 2.1]#EC-2.1  
+[Go to EC 2.2]#EC-2.2  
 
-## Part 1
+##Part 1
 
 Very similar to my implementation from Homework 3, but with changes to how the filepath is parsed to be run and using `execvp` instead of `execve`.
 
@@ -20,7 +20,7 @@ The way the filepath is parsed is as follows:
 	
 The `SIGINT` signal is blocked in the parent but not the child, as we create out sigpromask that blocks `SIGINT` in the parent and when we have a child we remove the block. This means that the child can be interrupted but nor the parent.
 
-## Part 2
+##Part 2
 
 Before we go into the functions, I'll go over all of the global variables in the header file.
 
@@ -74,7 +74,7 @@ Next, we have the linked list implementation, first with the `Node` struct and t
 
 - Once we have checked every struct, we unlock `lock` and return with 0.
 
-## Part 3
+##Part 3
 
 Now we can go over the two global variables at the beginning of the header file.
 
@@ -94,12 +94,12 @@ Next, we have `pid`, which will be used to store the pid of the child process to
 - This is the handler for the `SIGALRM` signal. All it does is lock `lock`, check if `pid` is not 0, and if it isn't sends a `SIGKILL` signal to the process with pid equal to `pid`. After that, it unlocks `lock`.
 
 
-## Extra Credits
+##Extra Credits
 
-#### EC 2.1
+####EC 2.1
 
 - To implement this extra credit, all I had to do was in `cse320_free()` in the for loop, after I find the address, was after I freed `ptr` to set `ref_count = 0`, set `addr = 0` and decrement `num_addr`. Doing this means that the struct in the array is not empty and can be used for another call of `cse320_malloc()` in the future.
 
-#### EC 2.2
+####EC 2.2
 
 - The implementation for this extra credit was almost exactly the same as EC 2.1, the onyl difference was that instead of doing the clear every time the method was called, I had to check first if `ref_count = 0`, as it is possible to have multiple references to the same file descriptor. So in `cse320_fclose()` I just had to check if `ref_count = 0`, then close the file, set `filename` and `file_desc` to 0, decrement `num_file` and return.
