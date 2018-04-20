@@ -5,8 +5,8 @@
 [Go to Part 3](#part-3)  
 
 Extra Credits Implemented:  
-[Go to EC 2.1](#EC-2.1)  
-[Go to EC 2.2](#EC-2.2)  
+[Go to EC 2.1](#ec-21)  
+[Go to EC 2.2](#ec-22)  
 
 ## Part 1
 

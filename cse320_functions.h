@@ -36,17 +36,22 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 /* Linked list implementation */
 struct Node{
 	void* data;
-	struct Node* next;
+	struct Addr_node* next;
 };
 
-void insert(struct Node** head, void* data){
-	struct Node* node = (struct Node*)malloc(sizeof(struct Node));
+void addr_insert(struct Node** head, void* data){
+	struct Addr_node* node = (struct Addr_node*)malloc(sizeof(struct Addr_node));
 	node->data = malloc(sizeof(data));
 	node->next = *head;
-	
-	int i;
-	for (i = 0; i < sizeof(data); i++)
-        *(char *)(node->data + i) = *(char *)(data + i);
+	node->data = data;
+    *head = node;
+}
+
+void file_insert(struct Node** head, void* data){
+	struct File_node* node = (struct File_node*)malloc(sizeof(struct File_node));
+	node->data = malloc(sizeof(data));
+	node->next = *head;
+	node->data = data;
     *head = node;
 }
 
