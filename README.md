@@ -16,8 +16,8 @@ The `SIGINT` signal is blocked in the parent but not the child, as we create out
 
 Before we go into the functions, I'll go over all of the global variables in the header file.
 
-The `timer` and `pid` are used in Part 3 so I'll wait until then to explain them.
-Next we have our two scructs that were defined in the documentation. I added an extra field to the `file_in_use` struct called `file_desc` to store the file desciptor to be returned in the fopen method.
+The `timer` and `pid` are used in Part 3 so I'll wait until then to explain them.  
+Next we have our two scructs that were defined in the documentation. I added an extra field to the `file_in_use` struct called `file_desc` to store the file desciptor to be returned in the fopen method.  
 After that we have the two arrays of structs to store the open files and memory pointers, with variables that will keep track of the number of open files and memory pointers.
 
 We now have our `static pthread_mutex` so that our methods can be queued when in a multithreaded environment, as each cse320 method starts with a lock on the mutex and ends with an unlock.
@@ -26,61 +26,61 @@ Next we have the linked list implementation, first with the `Node` struct and th
 
 #### cse320_malloc()
 
-The `malloc()` wrapper that I have implemented takes in the `size` of the block to be allocated. We then go into a lock on the global mutex called `lock`. After that we check to see if we have 25 addresses stored in our array, and if we do, we set `errno = ENOMEM`, unlock `lock` and return with a value of -1. 
-	
-If we have less than 25 in our array, we then declare a void pointer called `pointer` and assign it to the return value of `malloc(size)`. 
+- The `malloc()` wrapper that I have implemented takes in the `size` of the block to be allocated. We then go into a lock on the global mutex called `lock`. After that we check to see if we have 25 addresses stored in our array, and if we do, we set `errno = ENOMEM`, unlock `lock` and return with a value of -1. 
 
-After this all we have to do is add the pointer to an available struct in the array, and we do that through our loop, incrementing `ref_count` and `num_addr` and breaking from the loop. After that all we do is unlock `lock` and return the pointer.
+- If we have less than 25 in our array, we then declare a void pointer called `pointer` and assign it to the return value of `malloc(size)`. 
+
+- After this all we have to do is add the pointer to an available struct in the array, and we do that through our loop, incrementing `ref_count` and `num_addr` and breaking from the loop. After that all we do is unlock `lock` and return the pointer.
 
 #### cse320_free()
 
-Next we have the `free()` wrapper, which takes in a void pointer called `ptr` for the memory to be freed. We first lock `lock`, then go into our loop to try and find the address that is being freed. If we find the address and it is not `NULL`, we can then check the `ref_count`.
+- Next we have the `free()` wrapper, which takes in a void pointer called `ptr` for the memory to be freed. We first lock `lock`, then go into our loop to try and find the address that is being freed. If we find the address and it is not `NULL`, we can then check the `ref_count`.
 
-If `ref_count` is not zero, we decrement it, call `free(ptr)` to free the memory, unlock `lock` and return with 0. 
-If `ref_count` is zero, we are in a double free situation. We print our error message, assign `errno = EADDRNOTAVAIL`, unlock `lock`, and return with -1. 
+- If `ref_count` is not zero, we decrement it, call `free(ptr)` to free the memory, unlock `lock` and return with 0.  
+- If `ref_count` is zero, we are in a double free situation. We print our error message, assign `errno = EADDRNOTAVAIL`, unlock `lock`, and return with -1. 
 
-If we didn't find the address in our array, that means we have an illegal address, which will be handled outside of the loop at the end of our method, where we print the error message, assign `errno = EFAULT`, and return with -1.
+- If we didn't find the address in our array, that means we have an illegal address, which will be handled outside of the loop at the end of our method, where we print the error message, assign `errno = EFAULT`, and return with -1.
 	
 #### cse320_fopen()
 
-We now have the `fopen()` wrapper, where again we take in the same args as the normal method, `filename` and `mode`. We lock `lock` and declare the file decriptor `file`. we then go into our loop to check to see if the file already has a pointer by comparing the filename to the `basename(filename)` which will just check the filename itself instead of any of the path data. 
+- We now have the `fopen()` wrapper, where again we take in the same args as the normal method, `filename` and `mode`. We lock `lock` and declare the file decriptor `file`. we then go into our loop to check to see if the file already has a pointer by comparing the filename to the `basename(filename)` which will just check the filename itself instead of any of the path data. 
 
-If we find a match and the `file_desc` is zero, we can reopen the file with `fopen(filename, mode)`. We then increment the `ref_count`, unlock `lock`, and return the file descriptor.
+- If we find a match and the `file_desc` is zero, we can reopen the file with `fopen(filename, mode)`. We then increment the `ref_count`, unlock `lock`, and return the file descriptor.
 
-If we didn't find a match, we then go into a loop to find the first available struct in our array. When we find one, we call `fopen(filename, mode)` to get a file descriptor, and check if it is not `NULL`.
-If `file` is `NULL`, we set `errno = ENFILE`, print our error message, unlock `lock`, and return `NULL`.
-If `file` is not null, we assign the filename to `basename(filename)`, set `file_desc` to `file`, increment `ref_count` and `num_file` and break from the loop. We then unlock `lock` and return `file`.
+- If we didn't find a match, we then go into a loop to find the first available struct in our array. When we find one, we call `fopen(filename, mode)` to get a file descriptor, and check if it is not `NULL`.  
+- If `file` is `NULL`, we set `errno = ENFILE`, print our error message, unlock `lock`, and return `NULL`.  
+- If `file` is not null, we assign the filename to `basename(filename)`, set `file_desc` to `file`, increment `ref_count` and `num_file` and break from the loop. We then unlock `lock` and return `file`.
 
 #### cse320_fclose()
 
-Onto the `fclose()` wrapper, which takes in a file descriptor called `stream`. Again we lock `lock`, then go into a loop to see if we can find `stream` in our array. If we do find it and it is not `NULL`, we check the `ref_count`.
+- Onto the `fclose()` wrapper, which takes in a file descriptor called `stream`. Again we lock `lock`, then go into a loop to see if we can find `stream` in our array. If we do find it and it is not `NULL`, we check the `ref_count`.
 
-If `ref_count` is not zero, we decrement. If it is now zero we can call `fclose(stream)` to close the file descriptor, unlock `lock` and return with 0.
-If `ref_count` is zero, we have a double close situation. We print our error message, set `errno = EINVAL`, unlock `lock` and return with -1.
+- If `ref_count` is not zero, we decrement. If it is now zero we can call `fclose(stream)` to close the file descriptor, unlock `lock` and return with 0.  
+- If `ref_count` is zero, we have a double close situation. We print our error message, set `errno = EINVAL`, unlock `lock` and return with -1.
 
-If we didn't find `file` that means we have an illegal filename. So we print our error message, set `errno = ENOENT`, unlock `lock` and return with -1.
+- If we didn't find `file` that means we have an illegal filename. So we print our error message, set `errno = ENOENT`, unlock `lock` and return with -1.
 
 #### cse320_clean()
 
-Finally, we have `cse320_clean()` which takes no args. All we do here is lock `lock`, go into a loop for each array of structs and check if `ref_count > 0`. If true, either call `free()` or `fclose()` and set `ref_count = 0`.
+- Finally, we have `cse320_clean()` which takes no args. All we do here is lock `lock`, go into a loop for each array of structs and check if `ref_count > 0`. If true, either call `free()` or `fclose()` and set `ref_count = 0`.
 
-Once we have checked every struct, we unlock `lock` and return with 0.
+- Once we have checked every struct, we unlock `lock` and return with 0.
 
 ## Part 3
 
 Now we can go over the two global variables in the beginning of the header file.
 
-First we have `timer`, which is the variable we will use to store the time in seconds for our reaping functionality. The default value for this timer is 5 seconds.
+First we have `timer`, which is the variable we will use to store the time in seconds for our reaping functionality. The default value for this timer is 5 seconds.  
 Next we have `pid`, which will be used to store the pid of the child process to be passed to our handler method for the `SIGALRM`.
 
 #### cse320_fork()
 
-This is a simple wrapper for `fork()`. What it does is lock `lock`, calls `fork()` and stores the pid in `pid`. It checks if `pid != 0`, meaning it is the parent process. It then sets and `alarm` with length `timer`. If it is not the parent, it does nothing. In either case, it unlock `lock` and return the value of `pid`.
+- This is a simple wrapper for `fork()`. What it does is lock `lock`, calls `fork()` and stores the pid in `pid`. It checks if `pid != 0`, meaning it is the parent process. It then sets and `alarm` with length `timer`. If it is not the parent, it does nothing. In either case, it unlock `lock` and return the value of `pid`.
 
 #### cse320_setttimer()
 
-This is a very simple method only taking one argument, `t` which is the time in seconds to change the timer to. All this method does is lock `lock`, set `timer` to `t`, unlock `lock` and return with 0.
+- This is a very simple method only taking one argument, `t` which is the time in seconds to change the timer to. All this method does is lock `lock`, set `timer` to `t`, unlock `lock` and return with 0.
 
 #### cse320_handler()
 
-This is the handler for the `SIGALRM` signal. All if does is lock `lock`, check if `pid` is not 0, and if it isn't sends a `SIGKILL` signal to the process with pid equal to `pid`. After that it unlocks `lock`.
+- This is the handler for the `SIGALRM` signal. All if does is lock `lock`, check if `pid` is not 0, and if it isn't sends a `SIGKILL` signal to the process with pid equal to `pid`. After that it unlocks `lock`.
