@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <limits.h>
+#include <libgen.h>
 
 
 /* Timer time (in seconds) */
@@ -25,31 +26,36 @@ struct file_in_use{
 	int ref_count;
 };
 
-struct addr_in_use addr_arr[25];
+struct Addr_node* Addr_head = NULL;
 int num_addr = 0;
-struct file_in_use file_arr[25];
+struct File_node* File_head = NULL;
 int num_file = 0;
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /* Linked list implementation */
-struct Node{
-	void* data;
+struct Addr_node{
+	struct addr_in_use* data;
 	struct Addr_node* next;
 };
 
-void addr_insert(struct Node** head, void* data){
+struct File_node{
+	struct file_in_use* data;
+	struct File_node* next;
+};
+
+void addr_insert(struct Addr_node** head, struct addr_in_use* data){
 	struct Addr_node* node = (struct Addr_node*)malloc(sizeof(struct Addr_node));
-	node->data = malloc(sizeof(data));
+	node->data = (struct addr_in_use*)malloc(sizeof(struct addr_in_use));
 	node->next = *head;
 	node->data = data;
     *head = node;
 }
 
-void file_insert(struct Node** head, void* data){
+void file_insert(struct File_node** head, struct file_in_use* data){
 	struct File_node* node = (struct File_node*)malloc(sizeof(struct File_node));
-	node->data = malloc(sizeof(data));
+	node->data = (struct file_in_use*)malloc(sizeof(struct file_in_use));
 	node->next = *head;
 	node->data = data;
     *head = node;
@@ -60,25 +66,23 @@ void file_insert(struct Node** head, void* data){
 void* cse320_malloc(size_t size){
 	pthread_mutex_lock(&lock);
 	
-	if (num_addr > 25){
+	void* pointer;
+	pointer = malloc(size);
+	
+	struct addr_in_use* new = (struct addr_in_use*)malloc(sizeof(struct addr_in_use));
+	
+	/* Return error if either malloc call returns null */
+	if (!pointer || !new){
 		printf("Not enough memory\n");
 		errno = ENOMEM;
 		pthread_mutex_unlock(&lock);
 		return -1;
 	}
 	
-	void* pointer;
-	pointer = malloc(size);
-	
-	int i;
-	for (i = 0; i < 25; i++){
-		if (!addr_arr[i].addr){
-			addr_arr[i].addr = pointer;
-			addr_arr[i].ref_count++;
-			num_addr++;
-			break;
-		}
-	}
+	new->addr = pointer;
+	new->ref_count = 1;
+	num_addr++;
+	addr_insert(&Addr_head, new);
 	
 	pthread_mutex_unlock(&lock);
 	return pointer;
@@ -87,13 +91,12 @@ void* cse320_malloc(size_t size){
 int cse320_free(void* ptr){
 	pthread_mutex_lock(&lock);
 	
-	int i;
-	for(i = 0; i < 25; i++){
-		if ((!addr_arr[i].addr) && (addr_arr[i].addr == ptr)){
-			if (addr_arr[i].ref_count){
+	struct Addr_node* node = Addr_head;
+	while (node != NULL){
+		if (node->data->addr && node->data->addr == ptr){
+			if (node->data->ref_count){
 				free(ptr);
-				addr_arr[i].ref_count = 0;
-				addr_arr[i].addr = 0;
+				node->data->ref_count = 0;
 				num_addr--;
 				pthread_mutex_unlock(&lock);
 				return 0;
@@ -105,6 +108,7 @@ int cse320_free(void* ptr){
 				return -1;
 			}
 		}
+		node = node->next;
 	}
 	
 	printf("Free: Illegal address\n");
@@ -113,45 +117,48 @@ int cse320_free(void* ptr){
 	return -1;
 }
 
-FILE* cse320_fopen(const char* filename, const char* mode){
+FILE* cse320_fopen(char* filename, const char* mode){
 	pthread_mutex_lock(&lock);
 	
 	FILE* file;
 	
-	if (num_file > 25){
+	struct file_in_use* new = (struct file_in_use*)malloc(sizeof(struct file_in_use));
+	
+	/* Return error if malloc call returns null */
+	if (!new){
 		printf("Too many open files\n");
 		errno = ENFILE;
 		pthread_mutex_unlock(&lock);
 		return -1;
 	}
 	
-	int i;
-	for (i = 0; i < 25; i++){
-		if (file_arr[i].filename == basename(filename)){
-			if (!file_arr[i].file_desc){
-				file_arr[i].file_desc = fopen(filename, mode);
+	struct File_node* node = File_head;
+	while (node != NULL){
+		if (node->data->filename == basename(filename)){
+			if (!node->data->file_desc){
+				node->data->file_desc = fopen(filename, mode);
 			}
-			file_arr[i].ref_count++;
+			node->data->ref_count++;
 			pthread_mutex_unlock(&lock);
-			return file_arr[i].file_desc;
+			return node->data->file_desc;
 		}
+		node = node->next;
 	}
-	for (i = 0; i < 25; i++){
-		if (!file_arr[i].filename){
-			file = fopen(filename, mode);
-			if (!file){
-				errno = ENFILE;
-				printf("Fopen error");
-				pthread_mutex_unlock(&lock);
-				return 0;
-			}
-			file_arr[i].filename = basename(filename);
-			file_arr[i].file_desc = file;
-			file_arr[i].ref_count++;
-			num_file++;
-			break;
-		}
+	
+	if (access(filename, F_OK) != -1){
+		file = fopen(filename, mode);
 	}
+	else{
+		errno = ENFILE;
+		printf("Open: file not found\n");
+		pthread_mutex_unlock(&lock);
+		return -1;
+	}
+	new->filename = basename(filename);
+	new->file_desc = file;
+	new->ref_count = 1;
+	num_file++;
+	file_insert(&File_head, new);
 	
 	pthread_mutex_unlock(&lock);
 	return file;
@@ -160,15 +167,14 @@ FILE* cse320_fopen(const char* filename, const char* mode){
 int cse320_fclose(FILE* stream){
 	pthread_mutex_lock(&lock);
 	
-	int i;
-	for(i = 0; i < 25; i++){
-		if ((!file_arr[i].filename) && (file_arr[i].file_desc == stream)){
-			if (file_arr[i].ref_count){
-				file_arr[i].ref_count--;
-				if (!file_arr[i].ref_count){
+	struct File_node* node = File_head;
+	while (node != NULL){
+		if (node->data->filename && node->data->file_desc == stream){
+			if (node->data->ref_count){
+				node->data->ref_count--;
+				if (!node->data->ref_count){
 					fclose(stream);
-					file_arr[i].filename = 0;
-					file_arr[i].file_desc = 0;
+					node->data->file_desc = 0;
 					num_file--;
 				}
 				pthread_mutex_unlock(&lock);
@@ -181,6 +187,7 @@ int cse320_fclose(FILE* stream){
 				return -1;
 			}
 		}
+		node = node->next;
 	}
 	
 	printf("Close: Illegal filename\n");
@@ -192,16 +199,23 @@ int cse320_fclose(FILE* stream){
 int cse320_clean(){
 	pthread_mutex_lock(&lock);
 	
-	int i;
-	for (i = 0; i < 25; i++){
-		if (addr_arr[i].ref_count > 0){
-			free(addr_arr[i].addr);
-			addr_arr[i].ref_count = 0;
+	struct Addr_node* node = Addr_head;
+	while (node != NULL){
+	    if (node->data->ref_count > 0){
+			free(node->data->addr);
+			node->data->ref_count = 0;
 		}
-		if (file_arr[i].ref_count > 0){
-			fclose(file_arr[i].file_desc);
-			file_arr[i].ref_count = 0;
+		node = node->next;
+	}
+	
+	struct File_node* node2 = File_head;
+	while (node2 != NULL){
+		if (node2->data->ref_count > 0){
+			fclose(node2->data->file_desc);
+			node2->data->file_desc = 0;
+			node2->data->ref_count = 0;
 		}
+		node2 = node2->next;
 	}
 	
 	pthread_mutex_unlock(&lock);

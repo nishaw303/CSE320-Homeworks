@@ -1,10 +1,11 @@
 # Homework #4
 
+##### Main Homework  
 [Go to Part 1](#part-1)  
 [Go to Part 2](#part-2)  
 [Go to Part 3](#part-3)  
 
-Extra Credits Implemented:  
+##### Extra Credits:  
 [Go to EC 2.1](#ec-21)  
 [Go to EC 2.2](#ec-22)  
 
@@ -85,7 +86,7 @@ Next, we have `pid`, which will be used to store the pid of the child process to
 
 - This is a simple wrapper for `fork()`. What it does is lock `lock`, calls `fork()` and stores the pid in `pid`. It checks if `pid != 0`, meaning it is the parent process. It then sets and `alarm` with length `timer`. If it is not the parent, it does nothing. In either case, it unlocks `lock` and returns the value of `pid`.
 
-#### cse320_setttimer()
+#### cse320_settimer()
 
 - This is a very simple method only taking one argument, `t` which is the time in seconds to change the timer to. All this method does is lock `lock`, set `timer` to `t`, unlock `lock` and return with 0.
 
