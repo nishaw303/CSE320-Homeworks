@@ -26,39 +26,37 @@ struct file_in_use{
 	int ref_count;
 };
 
-struct Addr_node* Addr_head = NULL;
+struct Node* Addr_head = NULL;
 int num_addr = 0;
-struct File_node* File_head = NULL;
+struct Node* File_head = NULL;
 int num_file = 0;
 
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /* Linked list implementation */
-struct Addr_node{
-	struct addr_in_use* data;
-	struct Addr_node* next;
+struct Node{
+	void* data;
+	struct Node* next;
 };
 
-struct File_node{
-	struct file_in_use* data;
-	struct File_node* next;
-};
-
-void addr_insert(struct Addr_node** head, struct addr_in_use* data){
-	struct Addr_node* node = (struct Addr_node*)malloc(sizeof(struct Addr_node));
-	node->data = (struct addr_in_use*)malloc(sizeof(struct addr_in_use));
+void insert_node(struct Node** head, void* data){
+	struct Node* node = (struct Node*)malloc(sizeof(struct Node));
 	node->next = *head;
 	node->data = data;
     *head = node;
 }
 
-void file_insert(struct File_node** head, struct file_in_use* data){
-	struct File_node* node = (struct File_node*)malloc(sizeof(struct File_node));
-	node->data = (struct file_in_use*)malloc(sizeof(struct file_in_use));
-	node->next = *head;
-	node->data = data;
-    *head = node;
+int remove_node(struct Node* head, struct Node* rmv){
+    struct Node* ptr = head;
+    while (ptr->next != NULL){
+        if (ptr->next == rmv){
+            ptr->next = rmv->next;
+            free(rmv);
+            return 0;
+        }
+    }
+    return -1;
 }
 
 
@@ -82,7 +80,7 @@ void* cse320_malloc(size_t size){
 	new->addr = pointer;
 	new->ref_count = 1;
 	num_addr++;
-	addr_insert(&Addr_head, new);
+	insert_node(&Addr_head, new);
 	
 	pthread_mutex_unlock(&lock);
 	return pointer;
@@ -91,12 +89,12 @@ void* cse320_malloc(size_t size){
 int cse320_free(void* ptr){
 	pthread_mutex_lock(&lock);
 	
-	struct Addr_node* node = Addr_head;
+	struct Node* node = Addr_head;
 	while (node != NULL){
-		if (node->data->addr && node->data->addr == ptr){
-			if (node->data->ref_count){
+		if (((struct addr_in_use*)node->data)->addr && ((struct addr_in_use*)node->data)->addr == ptr){
+			if (((struct addr_in_use*)node->data)->ref_count){
 				free(ptr);
-				node->data->ref_count = 0;
+				((struct addr_in_use*)node->data)->ref_count = 0;
 				num_addr--;
 				pthread_mutex_unlock(&lock);
 				return 0;
@@ -132,15 +130,15 @@ FILE* cse320_fopen(char* filename, const char* mode){
 		return -1;
 	}
 	
-	struct File_node* node = File_head;
+	struct Node* node = File_head;
 	while (node != NULL){
-		if (node->data->filename == basename(filename)){
-			if (!node->data->file_desc){
-				node->data->file_desc = fopen(filename, mode);
+		if (((struct file_in_use*)node->data)->filename == basename(filename)){
+			if (!((struct file_in_use*)node->data)->file_desc){
+				((struct file_in_use*)node->data)->file_desc = fopen(filename, mode);
 			}
-			node->data->ref_count++;
+			((struct file_in_use*)node->data)->ref_count++;
 			pthread_mutex_unlock(&lock);
-			return node->data->file_desc;
+			return ((struct file_in_use*)node->data)->file_desc;
 		}
 		node = node->next;
 	}
@@ -158,7 +156,7 @@ FILE* cse320_fopen(char* filename, const char* mode){
 	new->file_desc = file;
 	new->ref_count = 1;
 	num_file++;
-	file_insert(&File_head, new);
+	insert_node(&File_head, new);
 	
 	pthread_mutex_unlock(&lock);
 	return file;
@@ -167,14 +165,13 @@ FILE* cse320_fopen(char* filename, const char* mode){
 int cse320_fclose(FILE* stream){
 	pthread_mutex_lock(&lock);
 	
-	struct File_node* node = File_head;
+	struct Node* node = File_head;
 	while (node != NULL){
-		if (node->data->filename && node->data->file_desc == stream){
-			if (node->data->ref_count){
-				node->data->ref_count--;
-				if (!node->data->ref_count){
+		if (((struct file_in_use*)node->data)->filename && ((struct file_in_use*)node->data)->file_desc == stream){
+			if (((struct file_in_use*)node->data)->ref_count){
+				((struct file_in_use*)node->data)->ref_count--;
+				if (!((struct file_in_use*)node->data)->ref_count){
 					fclose(stream);
-					node->data->file_desc = 0;
 					num_file--;
 				}
 				pthread_mutex_unlock(&lock);
@@ -199,23 +196,22 @@ int cse320_fclose(FILE* stream){
 int cse320_clean(){
 	pthread_mutex_lock(&lock);
 	
-	struct Addr_node* node = Addr_head;
+	struct Node* node = Addr_head;
 	while (node != NULL){
-	    if (node->data->ref_count > 0){
-			free(node->data->addr);
-			node->data->ref_count = 0;
+	    if (((struct addr_in_use*)node->data)->ref_count > 0){
+			free(((struct addr_in_use*)node->data)->addr);
+			((struct addr_in_use*)node->data)->ref_count = 0;
 		}
 		node = node->next;
 	}
 	
-	struct File_node* node2 = File_head;
-	while (node2 != NULL){
-		if (node2->data->ref_count > 0){
-			fclose(node2->data->file_desc);
-			node2->data->file_desc = 0;
-			node2->data->ref_count = 0;
+	node = File_head;
+	while (node != NULL){
+		if (((struct file_in_use*)node->data)->ref_count > 0){
+			fclose(((struct file_in_use*)node->data)->file_desc);
+			((struct file_in_use*)node->data)->ref_count = 0;
 		}
-		node2 = node2->next;
+		node = node->next;
 	}
 	
 	pthread_mutex_unlock(&lock);
