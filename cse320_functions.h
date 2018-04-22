@@ -47,16 +47,22 @@ void insert_node(struct Node** head, void* data){
     *head = node;
 }
 
-int remove_node(struct Node* head, struct Node* rmv){
-    struct Node* ptr = head;
-    while (ptr->next != NULL){
-        if (ptr->next == rmv){
-            ptr->next = rmv->next;
-            free(rmv);
-            return 0;
-        }
+int remove_node(struct Node** head, struct Node** rmv){
+    struct Node* ptr = *head, *prev;
+    if (ptr != NULL && ptr == *rmv){
+        *head = (*rmv)->next;
+        free(ptr);
+        return 0;
     }
-    return -1;
+    while (ptr != NULL && ptr != *rmv){
+        prev = ptr;
+        ptr = ptr->next;
+    }
+    if (ptr == NULL) return -1;
+    
+    prev->next = ptr->next;
+    free(ptr);
+    return 0;
 }
 
 
