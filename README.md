@@ -1,5 +1,10 @@
 # Homework #4
 
+I have included some tests in the form of the `cse320_tester` in the `part2_tests` directory, it first calls `cse320_malloc()` 3 times and prints the resulting linked list.  
+It then calls `cse320_free()` on the first address, and reprints the linked list. After that, it frees the remaining 2 addresses and prints the list again.  
+It does the same for `cse320_fopen` except it opens the same file twice.  
+At the end it also attempts a double free and a double close.
+
 ##### Main Homework  
 [Go to Part 1](#part-1)  
 [Go to Part 2](#part-2)  

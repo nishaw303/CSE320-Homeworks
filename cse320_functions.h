@@ -8,7 +8,7 @@
 #include <signal.h>
 #include <limits.h>
 #include <libgen.h>
-
+#include <stdint.h>
 
 /* Timer time (in seconds) */
 int timer = 5; /* Default 5 second timer */
@@ -82,12 +82,12 @@ void* cse320_malloc(size_t size){
 		printf("Not enough memory\n");
 		errno = ENOMEM;
 		pthread_mutex_unlock(&lock);
-		return -1;
+		return (void *)-1;
 	}
 	
 	struct Node* node = Freed_head;
 	while (node != NULL){
-		if (node->data == (int)pointer){
+		if ((uintptr_t) node->data == (uintptr_t) pointer){
 			remove_node(&Freed_head, &node);
 		}
 		node = node->next;
@@ -107,7 +107,7 @@ int cse320_free(void* ptr){
 	
 	struct Node* node = Freed_head;
 	while (node != NULL){
-		if (node->data == (int)ptr){
+		if ((uintptr_t) node->data == (uintptr_t) ptr){
 			printf("Free: Double free attempt\n");
 			errno = EADDRNOTAVAIL;
 			pthread_mutex_unlock(&lock);
@@ -120,7 +120,7 @@ int cse320_free(void* ptr){
 	while (node != NULL){
 		if (((struct addr_in_use*)node->data)->addr && ((struct addr_in_use*)node->data)->addr == ptr){
 			free(ptr);
-			insert_node(&Freed_head, (int)ptr);
+			insert_node(&Freed_head, (void *)(uintptr_t) ptr);
 			remove_node(&Addr_head, &node);
 			num_addr--;
 			pthread_mutex_unlock(&lock);
@@ -147,7 +147,7 @@ FILE* cse320_fopen(char* filename, const char* mode){
 		printf("Too many open files\n");
 		errno = ENFILE;
 		pthread_mutex_unlock(&lock);
-		return -1;
+		return (void *)-1;
 	}
 	
 	struct Node* node = File_head;
@@ -167,12 +167,12 @@ FILE* cse320_fopen(char* filename, const char* mode){
 		errno = ENFILE;
 		printf("Open: file not found\n");
 		pthread_mutex_unlock(&lock);
-		return -1;
+		return (void *)-1;
 	}
 	
 	node = Closed_head;
 	while (node != NULL){
-		if (node->data == (int)file){
+		if ((uintptr_t) node->data == (uintptr_t) file){
 			remove_node(&Freed_head, &node);
 		}
 		node = node->next;
@@ -193,7 +193,7 @@ int cse320_fclose(FILE* stream){
 	
 	struct Node* node = Closed_head;
 	while (node != NULL){
-		if (node->data == (int)stream){
+		if ((uintptr_t) node->data == (uintptr_t) stream){
 			printf("Close: Ref count zero\n");
 			errno = EINVAL;
 			pthread_mutex_unlock(&lock);
@@ -208,7 +208,7 @@ int cse320_fclose(FILE* stream){
 			((struct file_in_use*)node->data)->ref_count--;
 			if (!((struct file_in_use*)node->data)->ref_count){
 				fclose(stream);
-			    insert_node(&Closed_head, (int)stream);
+			    insert_node(&Closed_head, (void *)(uintptr_t) stream);
 			    remove_node(&File_head, &node);
 				num_file--;
 			}
@@ -232,7 +232,7 @@ int cse320_clean(){
  
    while (node != NULL){
         next = node->next;
-	    insert_node(&Freed_head, (int)((struct addr_in_use*)node->data)->addr);
+	    insert_node(&Freed_head, (void *)(uintptr_t) ((struct addr_in_use*)node->data)->addr);
 		free(((struct addr_in_use*)node->data)->addr);
 		free(node);
 		node = next;
@@ -245,7 +245,7 @@ int cse320_clean(){
 	next = NULL;
 	while (node != NULL){
         next = node->next;
-	    insert_node(&Closed_head, (int)((struct file_in_use*)node->data)->file_desc);
+	    insert_node(&Closed_head, (void *)(uintptr_t) ((struct file_in_use*)node->data)->file_desc);
 		free(((struct file_in_use*)node->data)->file_desc);
 		free(node);
 		node = next;
