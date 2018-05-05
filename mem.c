@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-int memory[256] = {0};
+void* memory = malloc(1024);
 
 int main(){
 	while(1){

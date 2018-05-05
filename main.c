@@ -19,11 +19,62 @@ char* const prompt_str = "prompt> ";
 /* Input buffer */
 char input[255];
 
-/* Arrays of page tables */
+/* Structs for page tables */
+struct second_level_pt{
+    int virt_addr[32];
+};
 
+struct first_level_pt{
+    struct second_level_pt* ptr[8];
+};
 
-void* cse320_virt_to_phys(){
+/* Actual page tables for "processes" */
+struct first_level_pt* pageTables[4];
 
+int cse320_malloc(char* thread_id){
+    int i;
+    for (i = 0; i < 4; i++){
+        if (threads[i] == thread_id){
+            break;
+        }
+    }
+    if (pageTables[i] == NULL){
+        pageTables[i] = (struct first_level_pt*)malloc(sizeof(struct first_level_pt));
+        int j, k;
+        for (j = 0; j < 8; j++){
+            pageTables[i]->ptr[j] = (struct second_level_pt*)malloc(sizeof(struct second_level_pt));
+            for (k = 0; k < 32; k++){
+                pageTables[i]->ptr[j]->virt_addr[k] = 0;
+            }
+        }
+        pageTables[i]->ptr[0]->virt_addr[0] = i*256;
+        return 0;
+    }
+    else {
+        int j, k;
+        for (j = 0; j < 8; j++){
+            for (k = 0; k < 32; k++){
+                if (pageTables[i]->ptr[j]->virt_addr[k] == 0 && (k && !j && !i)){
+                    pageTables[i]->ptr[j]->virt_addr[k] = i*256+k;
+                    return 0;
+                }
+            }
+        }
+        return -1;
+    }
+}
+
+int cse320_virt_to_phys(char* virtual_addr, int proc){
+    char firstLvl[10];
+    virtual_addr+=10;
+    memcpy(firstLvl, virtual_addr, 10);
+    virtual_addr+=10;
+    char secondLvl[10];
+    memcpy(secondLvl, virtual_addr, 10);
+    int firstInd = strtoul(firstLvl, NULL, 2);
+    int secondInd = strtoul(secondLvl, NULL, 2);
+    if ((firstInd > 8) || (secondInd > 32)) return -1;
+    return pageTables[proc]->ptr[firstInd]->virt_addr[secondInd];
 }
 
 void* thread_func(){
@@ -37,7 +88,6 @@ int main(int argc, char* argv[], char* envp[]){
     pid_t pid;
     int status;
     int num_threads = 0;
-    char* appname = (char*)malloc(255);
     
 prompt:
 
@@ -102,31 +152,81 @@ prompt:
     
     /* Mem */
     else if (!strcmp(command, commands[3])){
-    
+        char* temp = strtok(NULL, " \n");
+        unsigned long thread_id = strtoul(temp, NULL, 10);
+        int i;
+        for (i = 0; i < 4; i++){
+            if (threads[i] == thread_id){
+                break;
+            }
+        }
+        if (pageTables[i] == NULL){
+            printf("No virtual memory allocated for process %lu\n", thread_id);
+        }
+        else{
+            int j;
+            for (j = 0; j < 8; j++){
+                int k;
+                for (k = 0; k < 32; k++){
+                    if (!k && !i && !j){
+                        printf("Virtual memory address: %d\n", pageTables[i]->ptr[j]->virt_addr[k]);
+                    }
+                    if (pageTables[i]->ptr[j]->virt_addr[k]){
+                        printf("Virtual memory address: %d\n", pageTables[i]->ptr[j]->virt_addr[k]);
+                    }
+                }
+            }
+        }
     	goto prompt;
     }
     
     /* Allocate */
     else if (!strcmp(command, commands[4])){
-    
+        char* temp = strtok(NULL, " \n");
+        unsigned long thread_id = strtoul(temp, NULL, 10);
+        int out = cse320_malloc(thread_id);
+        if (out){
+            printf("Exceeds max virtual memory allocation\n");
+            goto prompt;
+        }
+        printf("Successfully allocated virtual memory");
     	goto prompt;
     }
     
     /* Read */
     else if (!strcmp(command, commands[5])){
+    	char* temp = strtok(NULL, " \n");
+    	unsigned long thread_id = strtoul(temp, NULL, 10);
     	
+    	/* Finds which thread we are checking the memory for */
+    	int i;
+    	for (i = 0; i < 4; i++){
+    	    if (thread_id == (unsigned long)threads[i]){
+    	        break;
+    	    }
+    	}
+    	void* addr = cse320_virt_to_phys(thread_id, i);
+    	printf("Address out of range\n");
     	goto prompt;
     }
     
     /* Write */
     else if (!strcmp(command, commands[6])){
-    
     	goto prompt;
     }
     
     /* Exit */
     else if (!strcmp(command, commands[7])){
-    	
+        int i;
+    	for (i = 0; i < 4; i++){
+    	    if (threads[i]){
+    	        pthread_kill(&threads[i], SIGTERM);
+    	        threads[i] = NULL;
+    	        num_threads--;
+    	    }
+    	}
+    	free(*threads);
+    	free(*pageTables);
         return 0;
     }
     
