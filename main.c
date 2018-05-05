@@ -6,6 +6,9 @@
 #include <limits.h>
 #include <signal.h>
 #include <pthread.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 /* Our commands */
 char* commands[] = {"create", "kill", "list", "mem", "allocate", "read", "write", "exit"};
@@ -31,10 +34,10 @@ struct first_level_pt{
 /* Actual page tables for "processes" */
 struct first_level_pt* pageTables[4];
 
-int cse320_malloc(char* thread_id){
+int cse320_malloc(unsigned long thread_id){
     int i;
     for (i = 0; i < 4; i++){
-        if (threads[i] == thread_id){
+        if ((unsigned long)threads[i] == thread_id){
             break;
         }
     }
@@ -48,7 +51,7 @@ int cse320_malloc(char* thread_id){
             }
         }
         pageTables[i]->ptr[0]->virt_addr[0] = i*256;
-        return 0;
+        return i*256;
     }
     else {
         int j, k;
@@ -56,7 +59,7 @@ int cse320_malloc(char* thread_id){
             for (k = 0; k < 32; k++){
                 if (pageTables[i]->ptr[j]->virt_addr[k] == 0 && (k && !j && !i)){
                     pageTables[i]->ptr[j]->virt_addr[k] = i*256+k;
-                    return 0;
+                    return i*256+k;
                 }
             }
         }
@@ -66,7 +69,6 @@ int cse320_malloc(char* thread_id){
 
 int cse320_virt_to_phys(char* virtual_addr, int proc){
     char firstLvl[10];
-    virtual_addr+=10;
     memcpy(firstLvl, virtual_addr, 10);
     virtual_addr+=10;
     char secondLvl[10];
@@ -91,6 +93,10 @@ int main(int argc, char* argv[], char* envp[]){
     pid_t pid;
     int status;
     int num_threads = 0;
+    char* readfifo = "/tmp/readfifo";
+    char* writefifo = "/tmp/writefifo";
+    mkfifo(readfifo, 'r');
+    mkfifo(writefifo, 'w');
     
 prompt:
 
@@ -131,7 +137,7 @@ prompt:
     	char* temp = strtok(NULL, " \n");
     	unsigned long thread_id = strtoul(temp, NULL, 10);
     	for (i = 0; i < 4; i++){
-    	    if (threads[i] == thread_id){
+    	    if ((unsigned long)threads[i] == thread_id){
     	        threads[i] = NULL;
     	        pthread_kill(&thread_id, SIGTERM);
     	        num_threads--;
@@ -160,6 +166,10 @@ prompt:
     /* Mem */
     else if (!strcmp(command, commands[3])){
         char* temp = strtok(NULL, " \n");
+        if (temp == NULL){
+            printf("Invalid input\n");
+            goto prompt;   
+        }
         unsigned long thread_id = strtoul(temp, NULL, 10);
         int i;
         for (i = 0; i < 4; i++){
@@ -190,19 +200,27 @@ prompt:
     /* Allocate */
     else if (!strcmp(command, commands[4])){
         char* temp = strtok(NULL, " \n");
+        if (temp == NULL){
+            printf("Invalid input\n");
+            goto prompt;   
+        }
         unsigned long thread_id = strtoul(temp, NULL, 10);
         int out = cse320_malloc(thread_id);
-        if (out){
+        if (out == -1){
             printf("Exceeds max virtual memory allocation\n");
             goto prompt;
         }
-        printf("Successfully allocated virtual memory\n");
+        printf("Successfully allocated virtual memory at address: %d\n", out);
     	goto prompt;
     }
     
     /* Read */
     else if (!strcmp(command, commands[5])){
-    	char* temp = strtok(NULL, " \n");
+        char* temp = strtok(NULL, " \n");
+        if (temp == NULL){
+            printf("Invalid input\n");
+            goto prompt;   
+        }
     	unsigned long thread_id = strtoul(temp, NULL, 10);
     	
     	/* Finds which thread we are checking the memory for */
@@ -212,19 +230,30 @@ prompt:
     	        break;
     	    }
     	}
-    	int addr = cse320_virt_to_phys(thread_id, i);
+    	int addr = cse320_virt_to_phys(strtok(NULL, " \n"), i);
     	if (addr < 0){
-    	    printf("Address out of range\n");
+    	    printf("Address out of range\n", addr);
+    	}
+    	else if (addr % 4 != 0){
+    	    printf("Address is not aligned\n", addr);
     	}
     	else{
-    	    
+            char buff[1024];
+    	    int fd = open(readfifo, O_RDONLY);
+    	    read(fd, buff, 4);
+    	    printf("Integer at address %d: %d\n", addr, buff);
+    	    close(fd);
     	}
     	goto prompt;
     }
     
     /* Write */
     else if (!strcmp(command, commands[6])){
-    	char* temp = strtok(NULL, " \n");
+        char* temp = strtok(NULL, " \n");
+        if (temp == NULL){
+            printf("Invalid input\n");
+            goto prompt;   
+        }
     	unsigned long thread_id = strtoul(temp, NULL, 10);
     	
     	/* Finds which thread we are checking the memory for */
@@ -234,12 +263,19 @@ prompt:
     	        break;
     	    }
     	}
-    	int addr = cse320_virt_to_phys(thread_id, i);
+    	int addr = cse320_virt_to_phys(strtok(NULL, " \n"), i);
     	if (addr < 0){
-    	    printf("Address out of range\n");
+    	    printf("Address out of range\n", addr);
+    	}
+    	else if (addr % 4 != 0){
+    	    printf("Address is not aligned\n", addr);
     	}
     	else{
-    	    
+    	    int to_write = atoi(strtok(NULL, " \n"));
+    	    int fd = open(readfifo, O_WRONLY);
+    	    write(fd, to_write, 4);
+    	    printf("Integer %d written to address: %d\n", to_write, addr);
+    	    close(fd);
     	}
     	goto prompt;
     }
