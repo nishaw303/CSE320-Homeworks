@@ -74,6 +74,9 @@ int cse320_virt_to_phys(char* virtual_addr, int proc){
     int firstInd = strtoul(firstLvl, NULL, 2);
     int secondInd = strtoul(secondLvl, NULL, 2);
     if ((firstInd > 8) || (secondInd > 32)) return -1;
+    if ((pageTables[proc] == NULL) || (!pageTables[proc]->ptr[firstInd]->virt_addr[secondInd] && proc)){
+        return -1;
+    }
     return pageTables[proc]->ptr[firstInd]->virt_addr[secondInd];
 }
 
@@ -121,6 +124,10 @@ prompt:
     /* Kill */
     else if (!strcmp(command, commands[1])){
     	int i;
+    	if (num_threads == 0){
+    	    printf("No processes currently running\n");
+    	    goto prompt;
+    	}
     	char* temp = strtok(NULL, " \n");
     	unsigned long thread_id = strtoul(temp, NULL, 10);
     	for (i = 0; i < 4; i++){
@@ -189,7 +196,7 @@ prompt:
             printf("Exceeds max virtual memory allocation\n");
             goto prompt;
         }
-        printf("Successfully allocated virtual memory");
+        printf("Successfully allocated virtual memory\n");
     	goto prompt;
     }
     
@@ -205,13 +212,35 @@ prompt:
     	        break;
     	    }
     	}
-    	void* addr = cse320_virt_to_phys(thread_id, i);
-    	printf("Address out of range\n");
+    	int addr = cse320_virt_to_phys(thread_id, i);
+    	if (addr < 0){
+    	    printf("Address out of range\n");
+    	}
+    	else{
+    	    
+    	}
     	goto prompt;
     }
     
     /* Write */
     else if (!strcmp(command, commands[6])){
+    	char* temp = strtok(NULL, " \n");
+    	unsigned long thread_id = strtoul(temp, NULL, 10);
+    	
+    	/* Finds which thread we are checking the memory for */
+    	int i;
+    	for (i = 0; i < 4; i++){
+    	    if (thread_id == (unsigned long)threads[i]){
+    	        break;
+    	    }
+    	}
+    	int addr = cse320_virt_to_phys(thread_id, i);
+    	if (addr < 0){
+    	    printf("Address out of range\n");
+    	}
+    	else{
+    	    
+    	}
     	goto prompt;
     }
     
