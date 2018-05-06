@@ -6,8 +6,8 @@ Running "make clean" will remove "main" and "mem".
 - For my virtual addressing, I did a one-to-one mapping of virtual addresses to physical addresses, so each process gets a total of 256 bytes.
 This in turn means that a total of 32 int of size 4 bytes can be stored in physical memory for each process. 
 
-- My N, the number of addresses for my first page table will be 8, and my M, the number of addresses per page of the second page table, will be 
-32. This means that I will have a total of 256 total virtual memory addresses possible for each process.
+- My N, the number of addresses for my first page table will be 8, and my M, the number of addresses per page of the second page table, will be 32. 
+This means that I will have a total of 256 total virtual memory addresses possible for each process.
 
 - When my "main" spawns a thread, it just creates a thread that runs the "thread_func" method, which simply loops infinitum until the thread
 is terminated by the "kill" command, or "exit". I use a simillar approach in my "mem", where I continuously loop through waiting for a
