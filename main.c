@@ -238,11 +238,20 @@ prompt:
     	    printf("Address is not aligned\n", addr);
     	}
     	else{
-            char buff[1024];
-    	    int fd = open(readfifo, O_RDONLY);
-    	    read(fd, buff, 4);
-    	    printf("Integer at address %d: %d\n", addr, buff);
+    	    /* First we send a request to the memory */
+    	    char* temp;
+    	    sprintf(temp, "%d", addr);
+    	    char* request = strcat("REQUESTING ", temp);
+    	    int fd = open(readfifo, O_WRONLY);
+    	    write(fd, request, 32);
     	    close(fd);
+    	    
+    	    /* Now we wait for the reply */
+            char buff[4];
+    	    int fd2 = open(readfifo, O_RDONLY);
+    	    read(fd2, buff, 4);
+    	    printf("Integer at address %d: %s\n", addr, buff);
+    	    close(fd2);
     	}
     	goto prompt;
     }
