@@ -14,7 +14,7 @@
 char* commands[] = {"create", "kill", "list", "mem", "allocate", "read", "write", "exit"};
 
 /* Our array of processes (threads) */
-pthread_t threads[4] = {NULL};
+pthread_t threads[4] = {0};
 
 /* Prompt to be printed */
 char* const prompt_str = "prompt> ";
@@ -31,8 +31,20 @@ struct first_level_pt{
     struct second_level_pt* ptr[8];
 };
 
+
+/* Cache structs */
+struct cache{
+    int addr;
+    int val;
+};
+
+
 /* Actual page tables for "processes" */
 struct first_level_pt* pageTables[4];
+
+
+/* Cache array */
+struct cache* directCache[4];
 
 int cse320_malloc(unsigned long thread_id){
     int i;
@@ -57,9 +69,11 @@ int cse320_malloc(unsigned long thread_id){
         int j, k;
         for (j = 0; j < 8; j++){
             for (k = 0; k < 32; k++){
-                if (pageTables[i]->ptr[j]->virt_addr[k] == 0 && (k && !j && !i)){
-                    pageTables[i]->ptr[j]->virt_addr[k] = i*256+k;
-                    return i*256+k;
+                if (pageTables[i]->ptr[j]->virt_addr[k] == 0){
+                	if (!(!i && !j && !k)){
+                    	pageTables[i]->ptr[j]->virt_addr[k] = i*256+k;
+                    	return i*256+k;
+                    }
                 }
             }
         }
@@ -95,8 +109,15 @@ int main(int argc, char* argv[], char* envp[]){
     int num_threads = 0;
     char* readfifo = "/tmp/readfifo";
     char* writefifo = "/tmp/writefifo";
-    mkfifo(readfifo, 'r');
-    mkfifo(writefifo, 'w');
+    mkfifo(readfifo, 0666);
+    mkfifo(writefifo, 0666);
+    
+    /* Initialize the cache */
+    int c;
+    for (c = 0; c < 4; c++){
+        directCache[c] = (struct cache*)malloc(sizeof(struct cache));
+        directCache[c]->addr = -1;
+    }
     
 prompt:
 
@@ -138,8 +159,8 @@ prompt:
     	unsigned long thread_id = strtoul(temp, NULL, 10);
     	for (i = 0; i < 4; i++){
     	    if ((unsigned long)threads[i] == thread_id){
-    	        threads[i] = NULL;
-    	        pthread_kill(&thread_id, SIGTERM);
+    	        threads[i] = 0;
+    	        pthread_kill(thread_id, SIGTERM);
     	        num_threads--;
     	        goto prompt;
     	    }
@@ -232,12 +253,25 @@ prompt:
     	}
     	int addr = cse320_virt_to_phys(strtok(NULL, " \n"), i);
     	if (addr < 0){
-    	    printf("Address out of range\n", addr);
+    	    printf("Address out of range\n");
     	}
     	else if (addr % 4 != 0){
-    	    printf("Address is not aligned\n", addr);
+    	    printf("Address is not aligned\n");
     	}
     	else{
+    	    
+    	    
+    	    /* In comes the cache */
+    	    int d;
+    	    for (d = 0; d < 4; d++){
+    	        if (directCache[d]->addr == addr){
+    	            printf("Cache hit: integer is %d", directCache[d]->val);
+    	            goto prompt;
+    	        }
+    	    }
+    	    printf("Cache miss: searching memory...");
+    	    
+    	    
     	    /* First we send a request to the memory */
     	    char temp[32];
     	    sprintf(temp, "%d", addr);
@@ -249,8 +283,24 @@ prompt:
             char buff[32];
     	    int fd2 = open(readfifo, O_RDONLY);
     	    read(fd2, buff, 32);
-    	    printf("Integer at address %d: %s\n", addr, buff);
+    	    printf("Integer found at address %d: %s\n", addr, buff);
     	    close(fd2);
+    	    
+    	    /* Check if cache is full */
+    	    for (d = 0; d < 4; d++){
+    	        if (directCache[d]->addr == -1){
+    	            directCache[d]->addr = addr;
+    	            directCache[d]->val = atoi(buff);
+    	            goto prompt;
+    	        }
+    	    }
+    	    
+    	    /* Cache is full, now we have to evict a cache line */
+    	    int ran = rand() % 4; /* Pick a random number between 0 and 3 */
+    	    directCache[ran]->addr = addr;
+    	    directCache[ran]->val = atoi(buff);
+    	    printf("Eviction: evicted cache line %d", ran);
+    	    
     	}
     	goto prompt;
     }
@@ -273,22 +323,32 @@ prompt:
     	}
     	int addr = cse320_virt_to_phys(strtok(NULL, " \n"), i);
     	if (addr < 0){
-    	    printf("Address out of range\n", addr);
+    	    printf("Address out of range\n");
     	}
     	else if (addr % 4 != 0){
-    	    printf("Address is not aligned\n", addr);
+    	    printf("Address is not aligned\n");
     	}
     	else{
     	    char buff1[16];
     	    char buff2[16];
     	    char* int_out = strtok(NULL, " \n");
     	    sprintf(buff1, "%d ", addr);
-    	    sprintf(buff2, "%d", int_out);
+    	    sprintf(buff2, "%s", int_out);
     	    char* to_write = strcat(buff1, buff2);
             int fd = open(writefifo, O_WRONLY);
             write(fd, to_write, 32);
     	    printf("Integer %s written to address: %d\n", int_out, addr);
             close(fd);
+    	    
+    	    /* Check if cache is full */
+    	    int d;
+    	    for (d = 0; d < 4; d++){
+    	        if (directCache[d]->addr == -1){
+    	            directCache[d]->addr = addr;
+    	            directCache[d]->val = atoi(int_out);
+    	            goto prompt;
+    	        }
+    	    }
     	}
     	goto prompt;
     }
@@ -298,12 +358,11 @@ prompt:
         int i;
     	for (i = 0; i < 4; i++){
     	    if (threads[i]){
-    	        pthread_kill(&threads[i], SIGTERM);
-    	        threads[i] = NULL;
+    	        pthread_kill(threads[i], SIGTERM);
+    	        threads[i] = 0;
     	        num_threads--;
     	    }
     	}
-    	free(*threads);
     	free(*pageTables);
     	unlink(readfifo);
     	unlink(writefifo);
