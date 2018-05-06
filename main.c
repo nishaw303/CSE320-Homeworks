@@ -239,17 +239,16 @@ prompt:
     	}
     	else{
     	    /* First we send a request to the memory */
-    	    char* temp;
+    	    char temp[32];
     	    sprintf(temp, "%d", addr);
-    	    char* request = strcat("REQUESTING ", temp);
     	    int fd = open(readfifo, O_WRONLY);
-    	    write(fd, request, 32);
+    	    write(fd, temp, 32);
     	    close(fd);
     	    
     	    /* Now we wait for the reply */
-            char buff[4];
+            char buff[32];
     	    int fd2 = open(readfifo, O_RDONLY);
-    	    read(fd2, buff, 4);
+    	    read(fd2, buff, 32);
     	    printf("Integer at address %d: %s\n", addr, buff);
     	    close(fd2);
     	}
@@ -280,11 +279,16 @@ prompt:
     	    printf("Address is not aligned\n", addr);
     	}
     	else{
-    	    int to_write = atoi(strtok(NULL, " \n"));
-    	    int fd = open(readfifo, O_WRONLY);
-    	    write(fd, to_write, 4);
-    	    printf("Integer %d written to address: %d\n", to_write, addr);
-    	    close(fd);
+    	    char buff1[16];
+    	    char buff2[16];
+    	    char* int_out = strtok(NULL, " \n");
+    	    sprintf(buff1, "%d ", addr);
+    	    sprintf(buff2, "%d", int_out);
+    	    char* to_write = strcat(buff1, buff2);
+            int fd = open(writefifo, O_WRONLY);
+            write(fd, to_write, 32);
+    	    printf("Integer %s written to address: %d\n", int_out, addr);
+            close(fd);
     	}
     	goto prompt;
     }
@@ -301,6 +305,8 @@ prompt:
     	}
     	free(*threads);
     	free(*pageTables);
+    	unlink(readfifo);
+    	unlink(writefifo);
         return 0;
     }
     
