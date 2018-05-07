@@ -96,6 +96,24 @@ int cse320_virt_to_phys(char* virtual_addr, int proc){
     return pageTables[proc]->ptr[firstInd]->virt_addr[secondInd];
 }
 
+char* cse320_phys_to_virt(int phys_addr){
+	int i = phys_addr / 256;
+	int temp = phys_addr % 256;
+	int N = temp / 32;
+	int M = temp % 32;
+    char* phys_addr_str = (char*)malloc(sizeof(char) * 22);
+    int q;
+    for (q = 9; q > -1; q--){
+        phys_addr_str[q] = (N % 2) + '0';
+        N = N / 2;
+        phys_addr_str[q + 11] = (M % 2) + '0';
+        M = M / 2;
+    }
+    phys_addr_str[10] = ' ';
+    phys_addr_str[21] = '\0';
+    return phys_addr_str;
+}
+
 void* thread_func(){
 	while(1){
 		sleep(1);
@@ -193,10 +211,16 @@ prompt:
         }
         unsigned long thread_id = strtoul(temp, NULL, 10);
         int i;
+        unsigned long thread_id_temp = 0;
         for (i = 0; i < 4; i++){
             if (threads[i] == thread_id){
+                thread_id_temp = thread_id;
                 break;
             }
+        }
+        if (!thread_id_temp){
+            printf("Invalid thread ID\n");
+            goto prompt;
         }
         if (pageTables[i] == NULL){
             printf("No virtual memory allocated for process %lu\n", thread_id);
@@ -207,10 +231,11 @@ prompt:
                 int k;
                 for (k = 0; k < 32; k++){
                     if (!k && !i && !j){
-                        printf("Virtual memory address: %d\n", pageTables[i]->ptr[j]->virt_addr[k]);
+                        printf("Virtual memory address: 0000000000 0000000000 000000000000\n");
                     }
                     if (pageTables[i]->ptr[j]->virt_addr[k]){
-                        printf("Virtual memory address: %d\n", pageTables[i]->ptr[j]->virt_addr[k]);
+                    	char* virt_addr = cse320_phys_to_virt(pageTables[i]->ptr[j]->virt_addr[k]);
+                        printf("Virtual memory address: %s 000000000000\n", virt_addr);
                     }
                 }
             }
@@ -226,12 +251,25 @@ prompt:
             goto prompt;   
         }
         unsigned long thread_id = strtoul(temp, NULL, 10);
+        int i;
+        unsigned long thread_id_temp = 0;
+        for (i = 0; i < 4; i++){
+            if (threads[i] == thread_id){
+                thread_id_temp = thread_id;
+                break;
+            }
+        }
+        if (!thread_id_temp){
+            printf("Invalid thread ID\n");
+            goto prompt;
+        }
         int out = cse320_malloc(thread_id);
         if (out == -1){
             printf("Exceeds max virtual memory allocation\n");
             goto prompt;
         }
-        printf("Successfully allocated virtual memory at address: %d\n", out);
+        char* virt_addr = cse320_phys_to_virt(out);
+        printf("Successfully allocated virtual memory at address: %s 000000000000\n", virt_addr);
     	goto prompt;
     }
     
@@ -246,11 +284,17 @@ prompt:
     	
     	/* Finds which thread we are checking the memory for */
     	int i;
-    	for (i = 0; i < 4; i++){
-    	    if (thread_id == (unsigned long)threads[i]){
-    	        break;
-    	    }
-    	}
+        unsigned long thread_id_temp = 0;
+        for (i = 0; i < 4; i++){
+            if (threads[i] == thread_id){
+                thread_id_temp = thread_id;
+                break;
+            }
+        }
+        if (!thread_id_temp){
+            printf("Invalid thread ID\n");
+            goto prompt;
+        }
     	int addr = cse320_virt_to_phys(strtok(NULL, " \n"), i);
     	if (addr < 0){
     	    printf("Address out of range\n");
@@ -283,7 +327,8 @@ prompt:
             char buff[32];
     	    int fd2 = open(readfifo, O_RDONLY);
     	    read(fd2, buff, 32);
-    	    printf("Integer found at address %d: %s\n", addr, buff);
+    	    char* virt_addr = cse320_phys_to_virt(addr);
+    	    printf("Integer found at address %s 000000000000: %s\n", virt_addr, buff);
     	    close(fd2);
     	    
     	    /* Check if cache is full */
@@ -316,11 +361,17 @@ prompt:
     	
     	/* Finds which thread we are checking the memory for */
     	int i;
-    	for (i = 0; i < 4; i++){
-    	    if (thread_id == (unsigned long)threads[i]){
-    	        break;
-    	    }
-    	}
+        unsigned long thread_id_temp = 0;
+        for (i = 0; i < 4; i++){
+            if (threads[i] == thread_id){
+                thread_id_temp = thread_id;
+                break;
+            }
+        }
+        if (!thread_id_temp){
+            printf("Invalid thread ID\n");
+            goto prompt;
+        }
     	int addr = cse320_virt_to_phys(strtok(NULL, " \n"), i);
     	if (addr < 0){
     	    printf("Address out of range\n");
@@ -337,7 +388,8 @@ prompt:
     	    char* to_write = strcat(buff1, buff2);
             int fd = open(writefifo, O_WRONLY);
             write(fd, to_write, 32);
-    	    printf("Integer %s written to address: %d\n", int_out, addr);
+            char* virt_addr = cse320_phys_to_virt(addr);
+    	    printf("Integer %s written to address: %s 000000000000\n", int_out, virt_addr);
             close(fd);
     	    
     	    /* Check if cache is full */
