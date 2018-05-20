@@ -178,7 +178,7 @@ prompt:
     	for (i = 0; i < 4; i++){
     	    if ((unsigned long)threads[i] == thread_id){
     	        threads[i] = 0;
-    	        pthread_kill(thread_id, SIGTERM);
+    	        pthread_cancel(thread_id);
     	        num_threads--;
     	        goto prompt;
     	    }
@@ -309,11 +309,11 @@ prompt:
     	    int d;
     	    for (d = 0; d < 4; d++){
     	        if (directCache[d]->addr == addr){
-    	            printf("Cache hit: integer is %d", directCache[d]->val);
+    	            printf("Cache hit: integer is %d\n", directCache[d]->val);
     	            goto prompt;
     	        }
     	    }
-    	    printf("Cache miss: searching memory...");
+    	    printf("Cache miss: searching memory...\n");
     	    
     	    
     	    /* First we send a request to the memory */
@@ -344,7 +344,7 @@ prompt:
     	    int ran = rand() % 4; /* Pick a random number between 0 and 3 */
     	    directCache[ran]->addr = addr;
     	    directCache[ran]->val = atoi(buff);
-    	    printf("Eviction: evicted cache line %d", ran);
+    	    printf("Eviction: evicted cache line %d\n", ran);
     	    
     	}
     	goto prompt;
