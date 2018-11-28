@@ -2,7 +2,7 @@
 
 This repository is an aggregate of all the most recent versions of the C based homeworks for CSE320.
 
-Each homework will have a `README` describing what the goals of the homework were, and most will have documentation on the methods created within the homewor, though I will include a basic summary of each homework here.
+Each homework will have a `README` describing what the goals of the homework were, and most will have documentation on the methods created within the homework, though I will include a basic summary of each homework here.
 
 ### HW0
   Basic introduction to the use and creation of our github homework folders.
