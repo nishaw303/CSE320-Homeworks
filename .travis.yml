@@ -1,0 +1,9 @@
+language: c
+sudo: false
+script:
+  - make
+  - curl https://compas.cs.stonybrook.edu/~smadaminov/courses/script-hw1.txt > script.sh
+  - chmod +x script.sh
+  - ./script.sh
+after_success:
+  - echo "Success"
